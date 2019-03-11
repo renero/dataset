@@ -4,7 +4,7 @@ import sys
 
 
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.append('/Users/renero/Documents/IE/class_notebooks/dataset/dataset')
+sys.path.append('/Users/renero/Code/dataset/dataset')
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 source_suffix = '.rst'

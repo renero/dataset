@@ -27,4 +27,3 @@ Contents:
   :maxdepth: 1
 
   dataset
-  modules

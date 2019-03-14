@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
+from copy import copy
 from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
@@ -67,7 +68,7 @@ class Dataset(object):
             self.features = pd.read_csv(data_location, *args, **kwargs)
         else:
             if data_frame is not None:
-                self.features = data_frame
+                self.features = copy(data_frame)
             else:
                 raise RuntimeError(
                     "No data location, nor DataFrame passed to constructor")

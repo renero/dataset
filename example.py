@@ -31,7 +31,3 @@ hr.drop_columns(hr.correlated()).describe()
 
 print('\nOutliers')
 lof_outliers = hr.outliers()
-
-# La clave ahora es coger el percentil 1% inferior, que recoge los outliers
-# para ello, tengo que conseguir el indice de esos elementos para poder
-# eliminarlos

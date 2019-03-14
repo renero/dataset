@@ -2,7 +2,7 @@ import warnings
 warnings.simplefilter(action='ignore')
 import numpy as np
 import pandas as pd
-from dataset import Dataset
+from dataset.dataset import Dataset
 from unittest import TestCase
 
 warnings.simplefilter(action='ignore')

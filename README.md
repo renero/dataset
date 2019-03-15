@@ -1,7 +1,7 @@
 # Dataset
 (C) J. Renero
 
-[![Build Status](https://travis-ci.org/renero/dataset.svg?branch=master)](https://travis-ci.org/renero/dataset)
+[![Build Status](https://travis-ci.org/renero/dataset.svg?branch=master)](https://travis-ci.org/renero/dataset) [![Documentation Status](https://readthedocs.org/projects/pydataset/badge/?version=latest)](https://pydataset.readthedocs.io/en/latest/?badge=latest)
 
 This class attempts, through a very simple approach, collect all the common 
 tasks that are normally done over pandas dataframes, like:

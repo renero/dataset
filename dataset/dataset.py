@@ -2,13 +2,13 @@
 This is the package dataset.
 """
 import warnings
+from copy import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
-from copy import copy
 from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
@@ -20,6 +20,7 @@ from dataset.correlations import cramers_v
 from dataset.split import Split
 
 warnings.simplefilter(action='ignore')
+
 
 #
 # Correlation ideas taken from:
@@ -116,7 +117,7 @@ class Dataset(object):
 
     def update(self):
         """
-        Builds metainfromation about the dataset, considering the
+        Builds meta-information about the dataset, considering the
         features that are categorical, numerical or does/doesn't contain NA's.
         """
         meta = dict()
@@ -124,15 +125,15 @@ class Dataset(object):
         # Build the subsets per data ype (list of names)
         descr = pd.DataFrame({'dtype': self.features.dtypes,
                               'NAs': self.features.isna().sum()})
-        categorical_features = descr.loc[descr['dtype'] == 'object'].\
+        categorical_features = descr.loc[descr['dtype'] == 'object']. \
             index.values.tolist()
-        numerical_features = descr.loc[descr['dtype'] != 'object'].\
+        numerical_features = descr.loc[descr['dtype'] != 'object']. \
             index.values.tolist()
         numerical_features_na = descr.loc[(descr['dtype'] != 'object') &
-                                          (descr['NAs'] > 0)].\
+                                          (descr['NAs'] > 0)]. \
             index.values.tolist()
         categorical_features_na = descr.loc[(descr['dtype'] == 'object') &
-                                            (descr['NAs'] > 0)].\
+                                            (descr['NAs'] > 0)]. \
             index.values.tolist()
         complete_features = descr.loc[descr['NAs'] == 0].index.values.tolist()
 
@@ -281,7 +282,7 @@ class Dataset(object):
             np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
         # Find index of feature columns with correlation greater than threshold
         return [column for column in upper.columns
-                   if any(abs(upper[column]) > threshold)], corr_matrix
+                if any(abs(upper[column]) > threshold)], corr_matrix
 
     def categorical_correlated(self, threshold=0.9):
         """
@@ -456,6 +457,45 @@ class Dataset(object):
         """
         assert what in self.meta_tags
         return self.meta[what]
+
+    def bin(self, column, bins, category_names=None):
+        """
+        Makes a feature, which is normally numerical, a categorical by binning its
+        contents into the specified buckets.
+
+        Args:
+            column: The name of the feature to be binned
+            bins: the list of bins as an array of values of the form
+
+                >>> [(15, 20), (20, 25), (25, 30), (30, 35), (35, 40)]
+
+            category_names: An array with names or values we want for our new categories. If None
+                            a simple array with ordinal number of the category is used. In the
+                            example above, it should be an array from 1 .. 5.
+
+        Returns: The dataset modified
+
+        Example::
+
+            # Variable "x3" contains the number of sons of a person as an integer ranging between
+            # values 0 and 10. We want to convert that numerical value into a categorical one with
+            # a list of (say) 4 possible values, for the number of sons within given ranges:
+
+            >>> my_data.bin('x3', [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)], [0, 1, 2, 3, 4])
+
+        """
+
+        bins_tuples = pd.IntervalIndex.from_tuples(bins)
+        x = pd.cut(self.data[column].to_list(), bins_tuples)
+        if category_names is None:
+            x.categories = [i + 1 for i in range(len(bins))]
+        else:
+            assert len(category_names) == len(
+                bins), "Num of categories passed does not matched number of bins."
+            x.categories = category_names
+        self.data[column] = x
+        self.update()
+        return self
 
     def onehot_encode(self, to_convert=None):
         """
@@ -757,6 +797,28 @@ class Dataset(object):
         self.update()
         return self
 
+    def to_int(self, to_convert):
+        """
+        Convert a column or list of columns to integer values.
+        The columns must be numerical
+
+        Args:
+            to_convert: the column name or list of column names that we want to convert.
+
+        Returns: The dataset
+
+        Example::
+
+            >>> my_data.to_int(my_data.names('numerical'))
+
+        """
+        if isinstance(to_convert, list) is not True:
+            to_convert = [to_convert]
+        self.data[self.data[to_convert]] = self.data[
+            self.data[to_convert]].astype(int)
+        self.update()
+        return self
+
     def to_categorical(self, to_convert):
         """
         Convert the specified column or columns to categories
@@ -769,7 +831,8 @@ class Dataset(object):
 
         for column_name in to_convert:
             if column_name in list(self.features):
-                self.features[column_name] = self.features[column_name].apply(str)
+                self.features[column_name] = self.features[column_name].apply(
+                    str)
             else:
                 self.target = self.target.apply(str)
 
@@ -1187,10 +1250,10 @@ class Dataset(object):
                 number_of_bins = unique if unique <= bins else bins
 
                 # Plot arrangement
-                plt.subplot(len(columns_list), 1,i+1)
+                plt.subplot(len(columns_list), 1, i + 1)
 
                 # Plot
-                plt.hist([x,y], bins=number_of_bins, stacked=True)
+                plt.hist([x, y], bins=number_of_bins, stacked=True)
 
                 # Add labels
                 plt.title('Histogram of ' + column)

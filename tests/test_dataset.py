@@ -1,4 +1,5 @@
 import warnings
+
 warnings.simplefilter(action='ignore')
 import numpy as np
 import pandas as pd
@@ -9,7 +10,6 @@ warnings.simplefilter(action='ignore')
 
 
 class TestDataset(TestCase):
-
     df1 = pd.DataFrame(
         data={'col1': [1, 2, 3, 2, 2, 2, 1, 3, 2, 1],
               'col2': ['a', 'a', 'b', 'a', 'b', 'a', 'a', 'a', 'b', 'c'],
@@ -39,3 +39,9 @@ class TestDataset(TestCase):
         self.assertEqual(list(self.ds.numerical), ['col1'])
         self.assertIs(self.ds.data, self.ds.features)
         self.assertEqual(list(self.ds.categorical), ['col2'])
+
+    def test_bin(self):
+        ds = Dataset.from_dataframe(self.df1)
+        ds.bin('col1', [(0, 2), (2, 4)])
+        self.assertListEqual(list(ds.features['col1'].values),
+                             [1, 1, 2, 1, 1, 1, 1, 2, 1, 1])

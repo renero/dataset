@@ -27,11 +27,11 @@ To install this package, simply git clone this repo, and:
 
     $ cd dataset
     $ pip install -e .
-    
+
 ## Examples
 
 Check the `example.py` to see how to start using it.
 
 ## Documentation
 
-Please, check the latest documentation at ![ReadTheDocs PyDataset Project page](https://readthedocs.org/projects/pydataset/).
+Please, check the latest documentation at [ReadTheDocs PyDataset Project page](https://readthedocs.org/projects/pydataset/).

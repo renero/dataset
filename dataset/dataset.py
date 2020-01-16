@@ -820,7 +820,7 @@ class Dataset(object):
         # Safety check
         for feature in to_convert:
             assert feature in self.numerical_features, \
-                'Feature {} is not numerical.'.format()'
+                'Feature {} is not numerical.'.format(feature)'
 
         # Bulk conversion..
         self.data[to_convert] = self.data[to_convert].astype(int)

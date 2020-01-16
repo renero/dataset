@@ -1,7 +1,7 @@
 # Dataset
 (C) J. Renero
 
-[![Build Status](https://travis-ci.org/renero/dataset.svg?branch=master)](https://travis-ci.org/renero/dataset) [![Documentation Status](https://readthedocs.org/projects/pydataset/badge/?version=latest)](https://pydataset.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/renero/dataset.svg?branch=master)](https://travis-ci.org/renero/dataset) [![Documentation Status](https://readthedocs.org/projects/pydataset/badge/?version=latest)](https://pydataset.readthedocs.io/en/latest/?badge=latest) ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/renero/dataset)
 
 This class attempts, through a very simple approach, collect all the common 
 tasks that are normally done over pandas dataframes, like:
@@ -32,6 +32,6 @@ To install this package, simply git clone this repo, and:
 
 Check the `example.py` to see how to start using it.
 
-## Documentation
+## Documentation
 
 Please, check the latest documentation at [ReadTheDocs PyDataset Project page](https://readthedocs.org/projects/pydataset/).

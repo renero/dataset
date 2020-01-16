@@ -1130,6 +1130,22 @@ class Dataset(object):
             print(format_str.format(*f_list[from_idx:to_idx]))
         print('-' * ((max_fields * max_length) + (max_fields - 1)))
         return
+    
+    #
+    # Properties
+    #
+    @property
+    def numerical_features(self):
+        return self.names('numerical')
+    
+    @property
+    def categorical_features(self):
+        return self.names('categorical')
+
+
+    #
+    # Plot functions
+    #
 
     @staticmethod
     def plot_correlation_matrix(corr_matrix):

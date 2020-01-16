@@ -458,9 +458,9 @@ class Dataset(object):
         assert what in self.meta_tags
         return self.meta[what]
 
-    def bin(self, column, bins, category_names=None):
+    def discretize(self, column, bins, category_names=None):
         """
-        Makes a feature, which is normally numerical, a categorical by binning its
+        Makes a feature, which is normally numerical, categorical by binning its
         contents into the specified buckets.
 
         Args:
@@ -481,10 +481,12 @@ class Dataset(object):
             # values 0 and 10. We want to convert that numerical value into a categorical one with
             # a list of (say) 4 possible values, for the number of sons within given ranges:
 
-            >>> my_data.bin('x3', [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)], [0, 1, 2, 3, 4])
+            >>> my_data.discretize('x3', [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)], [0, 1, 2, 3, 4])
 
         """
-
+        assert column in self.numerical_features, \
+            'Feature {} is not numerical, in order to be discretized'.format(column)
+        
         bins_tuples = pd.IntervalIndex.from_tuples(bins)
         x = pd.cut(self.data[column].to_list(), bins_tuples)
         if category_names is None:
@@ -814,8 +816,14 @@ class Dataset(object):
         """
         if isinstance(to_convert, list) is not True:
             to_convert = [to_convert]
-        self.data[self.data[to_convert]] = self.data[
-            self.data[to_convert]].astype(int)
+
+        # Safety check
+        for feature in to_convert:
+            assert feature in self.numerical_features, \
+                'Feature {} is not numerical.'.format()'
+
+        # Bulk conversion..
+        self.data[to_convert] = self.data[to_convert].astype(int)
         self.update()
         return self
 

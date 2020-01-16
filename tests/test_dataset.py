@@ -1,12 +1,7 @@
-import warnings
-
-warnings.simplefilter(action='ignore')
 import numpy as np
 import pandas as pd
 from dataset.dataset import Dataset
 from unittest import TestCase
-
-warnings.simplefilter(action='ignore')
 
 
 class TestDataset(TestCase):
@@ -19,8 +14,33 @@ class TestDataset(TestCase):
     def setUp(self):
         self.ds = Dataset.from_dataframe(self.df1)
 
-    def test_numbers_to_float(self):
+    def test_numbers_type_conversion(self):
         self.assertIs(self.ds.features.col1.dtype, np.dtype('float64'))
+        self.ds.to_int('col1')
+        self.assertEqual(self.ds.data['col1'].dtype, 'int')
+        self.ds.to_float('col1')
+        self.assertEqual(self.ds.data['col1'].dtype, 'float')
+
+    def test_empty_to_float(self):
+        # Check that conversion works with all numerical columns when no
+        # column is specified
+        self.ds.to_int('col1')
+        self.ds.to_float()
+        self.assertEqual(self.ds.data['col1'].dtype, 'float')
+
+    def tests_to_float(self):
+        self.assertEqual(self.ds.numerical_features, ['col1'])
+
+    def test_set_target(self):
+        self.ds.set_target('col3')
+        self.assertEqual(self.ds.names(), ['col1', 'col2'])
+        self.assertEqual(self.ds.target.name, 'col3')
+
+    def test_unset_target(self):
+        self.ds.set_target('col3')
+        self.ds.unset_target()
+        self.assertEqual(self.ds.names(), ['col1', 'col2', 'col3'])
+        self.assertIsNone(self.ds.target)
 
     def test_select(self):
         self.assertEqual(list(self.ds.select('numerical')), ['col1'])
@@ -31,8 +51,6 @@ class TestDataset(TestCase):
         self.assertEqual(self.ds.target.name, 'col3')
 
     def test_update(self):
-        self.ds.describe()
-        self.ds.summary()
         self.assertEqual(self.ds.meta['features'], list(self.df1))
         self.ds.set_target('col3')
         self.assertEqual(self.ds.meta['target'], 'col3')
@@ -41,7 +59,6 @@ class TestDataset(TestCase):
         self.assertEqual(list(self.ds.categorical), ['col2'])
 
     def test_bin(self):
-        ds = Dataset.from_dataframe(self.df1)
-        ds.bin('col1', [(0, 2), (2, 4)])
-        self.assertListEqual(list(ds.features['col1'].values),
+        self.ds.discretize('col1', [(0, 2), (2, 4)])
+        self.assertListEqual(list(self.ds.features['col1'].values),
                              [1, 1, 2, 1, 1, 1, 1, 2, 1, 1])

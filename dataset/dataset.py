@@ -78,20 +78,12 @@ class Dataset(object):
         if isinstance(list(self.features)[0], str) is False:
             colnames = ['x{}'.format(col) for col in list(self.features)]
             self.features.columns = colnames
-        self.numbers_to_float()
+        self.to_float()
         self.update()
 
     @classmethod
     def from_dataframe(cls, df):
         return cls(data_location=None, data_frame=df)
-
-    def numbers_to_float(self):
-        columns = self.features.select_dtypes(
-            include=[np.number]).columns.tolist()
-        for column_name in columns:
-            self.features[column_name] = pd.to_numeric(
-                self.features[column_name]).astype(float)
-        return
 
     def set_target(self, target_name):
         """
@@ -112,6 +104,26 @@ class Dataset(object):
 
         self.target = self.features.loc[:, target_name].copy()
         self.features.drop(target_name, axis=1, inplace=True)
+        self.update()
+        return self
+
+    def unset_target(self):
+        """
+        Undo the `set_target()` operation. The feature `target_name` returns
+        to the DataFrame with the rest of the features.
+
+        :param target_name: The name of the column we want to be set as the
+            target variable for this dataset.
+
+        Example::
+
+            my_data.unset_target()
+
+        """
+        assert self.target is not None, "Target feature NOT set, yet..."
+
+        self.features[self.target.name] = self.target.values
+        self.target = None
         self.update()
         return self
 
@@ -334,7 +346,7 @@ class Dataset(object):
                            threshold_out=0.05,
                            verbose=False):
         """
-        Perform a forward-backward feature selection based on p-value from
+        Perform a forward/backward feature selection based on p-value from
         statsmodels.api.OLS
         Your features must be all numerical, so be sure to onehot_encode them
         before calling this method.
@@ -485,8 +497,9 @@ class Dataset(object):
 
         """
         assert column in self.numerical_features, \
-            'Feature {} is not numerical, in order to be discretized'.format(column)
-        
+            'Feature {} is not numerical, in order to be discretized'.format(
+                column)
+
         bins_tuples = pd.IntervalIndex.from_tuples(bins)
         x = pd.cut(self.data[column].to_list(), bins_tuples)
         if category_names is None:
@@ -799,33 +812,69 @@ class Dataset(object):
         self.update()
         return self
 
-    def to_int(self, to_convert):
+    def to_float(self, to_convert=None):
         """
-        Convert a column or list of columns to integer values.
-        The columns must be numerical
+        Convert a column or list of columns to float values. The columns must
+        be numerical.
 
         Args:
-            to_convert: the column name or list of column names that we want to convert.
+            to_convert: the column name or list of column names that we want
+                        to convert. If this argument is empty, then every
+                        numerical feature in the dataset is converted.
 
         Returns: The dataset
 
         Example::
 
-            >>> my_data.to_int(my_data.names('numerical'))
+            >>> my_data.to_float(my_data.numerical_features)
+
+        which is equivalent to
+
+            >>> my_data.to_float()
+
+        We can also specify a single or multiple features:
+
+            >>> my_data.to_float('feature_15')
+            >>> my_data.to_float(['feature_15', 'feature_21'])
 
         """
-        if isinstance(to_convert, list) is not True:
-            to_convert = [to_convert]
+        to_convert = self.__assert_list_of_numericals(to_convert)
+        for column_name in to_convert:
+            self.features[column_name] = pd.to_numeric(
+                self.features[column_name]).astype(float)
 
-        # Safety check
-        for feature in to_convert:
-            assert feature in self.numerical_features, \
-                'Feature {} is not numerical.'.format(feature)
+        return self.update()
+
+    def to_int(self, to_convert=None):
+        """
+        Convert a column or list of columns to integer values.
+        The columns must be numerical
+
+        Args:
+            to_convert: the column name or list of column names that we want
+                        to convert.
+
+        Returns: The dataset
+
+        Example::
+
+            >>> my_data.to_int(my_data.numerical_features)
+
+        which is equivalent to
+
+            >>> my_data.to_int()
+
+        We can also specify a single or multiple features:
+
+            >>> my_data.to_int('feature_15')
+            >>> my_data.to_int(['feature_15', 'feature_21'])
+
+        """
+        to_convert = self.__assert_list_of_numericals(to_convert)
 
         # Bulk conversion..
         self.data[to_convert] = self.data[to_convert].astype(int)
-        self.update()
-        return self
+        return self.update()
 
     def to_categorical(self, to_convert):
         """
@@ -945,7 +994,8 @@ class Dataset(object):
             print('Target: Not set')
         return
 
-    def describe_categorical(self, feature, inline=False):
+    @staticmethod
+    def describe_categorical(feature, inline=False):
         """
         Describe a categorical column by printing num classes and proportion
         metrics.
@@ -979,32 +1029,17 @@ class Dataset(object):
             body_formatted = body.format(*values_flattened)
             return header + body_formatted + trail
 
-    def numerical_description(self, feature):
-        """
-        Build a dictionary with the main numerical descriptors for a feature.
-
-        :param feature: The feature (column) to be analyzed
-        :return: A dictionary with the indicators and its values.
-        """
-        description = dict()
-        description['Min.'] = np.min(feature)
-        description['1stQ'] = np.percentile(feature, 25)
-        description['Med.'] = np.median(feature)
-        description['Mean'] = np.mean(feature)
-        description['3rdQ'] = np.percentile(feature, 75)
-        description['Max.'] = np.max(feature)
-        return description
-
-    def describe_numerical(self, feature, inline=False):
+    @staticmethod
+    def describe_numerical(feature, inline=False):
         """
         Describe a numerical column by printing min, max, med, mean, 1Q, 3Q
 
         :param feature: The numerical feature to be described.
         :param inline: Default False. Controls whether the description is
-            gnerated in a single line (compact) or paragraph mode.
+            generated in a single line (compact) or paragraph mode.
         :return: nothing
         """
-        description = self.numerical_description(feature)
+        description = Dataset.__numerical_description(feature)
         if inline is False:
             print('\'', feature.name, '\'', sep='')
             for k, v in description.items():
@@ -1130,18 +1165,17 @@ class Dataset(object):
             print(format_str.format(*f_list[from_idx:to_idx]))
         print('-' * ((max_fields * max_length) + (max_fields - 1)))
         return
-    
+
     #
     # Properties
     #
     @property
     def numerical_features(self):
         return self.names('numerical')
-    
+
     @property
     def categorical_features(self):
         return self.names('categorical')
-
 
     #
     # Plot functions
@@ -1180,14 +1214,7 @@ class Dataset(object):
             >>> my_data.plot_double_density(my_feature1, my_feature2)
         """
         # Get the list of categories
-        if category is None or self.target.name == category:
-            categories = self.target.unique()
-            category_series = self.target
-        else:
-            assert category in list(self.categorical), \
-                '"category" must be a categorical feature'
-            categories = self.features[category].unique()
-            category_series = self.features[category]
+        categories, category_series = self.__assert_category_values(category)
 
         assert feature in self.numerical, '"Feature" must be numerical.'
         # plot a density for each value of the category
@@ -1218,14 +1245,7 @@ class Dataset(object):
             >>> my_data.double_hist(my_feature1, my_feature2)
         """
         # Get the list of categories
-        if category is None or self.target.name == category:
-            categories = self.target.unique()
-            category_series = self.target
-        else:
-            assert category in list(self.categorical), \
-                '"category" must be a categorical feature'
-            categories = self.features[category].unique()
-            category_series = self.features[category]
+        categories, category_series = self.__assert_category_values(category)
 
         assert feature in self.numerical, '"Feature" must be numerical.'
         # plot a density for each value of the category
@@ -1284,3 +1304,53 @@ class Dataset(object):
                 plt.legend([target_name + ': 0', target_name + ': 1'])
                 plt.xlabel(column)
                 plt.ylabel('count')
+
+    #
+    # Private Methods
+    #
+
+    def __assert_list_of_numericals(self, to_convert):
+        if to_convert is not None:
+            # The list of columns is always a list, although a single
+            # argument is passed.
+            if isinstance(to_convert, list) is not True:
+                to_convert = [to_convert]
+
+            # Safety check
+            for feature in to_convert:
+                assert feature in self.numerical_features, \
+                    'Feature {} is not numerical.'.format(feature)
+        else:
+            to_convert = self.features.select_dtypes(
+                include=[np.number]).columns.tolist()
+
+        return to_convert
+
+    def __assert_category_values(self, category):
+        if category is None or self.target.name == category:
+            categories = self.target.unique()
+            category_series = self.target
+        else:
+            assert category in list(self.categorical), \
+                '"category" must be a categorical feature'
+            categories = self.features[category].unique()
+            category_series = self.features[category]
+
+        return categories, category_series
+
+    @staticmethod
+    def __numerical_description(feature):
+        """
+        Build a dictionary with the main numerical descriptors for a feature.
+
+        :param feature: The feature (column) to be analyzed
+        :return: A dictionary with the indicators and its values.
+        """
+        description = dict()
+        description['Min.'] = np.min(feature)
+        description['1stQ'] = np.percentile(feature, 25)
+        description['Med.'] = np.median(feature)
+        description['Mean'] = np.mean(feature)
+        description['3rdQ'] = np.percentile(feature, 75)
+        description['Max.'] = np.max(feature)
+        return description

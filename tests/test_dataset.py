@@ -1,7 +1,9 @@
+from unittest import TestCase
+
 import numpy as np
 import pandas as pd
+
 from dataset.dataset import Dataset
-from unittest import TestCase
 
 
 class TestDataset(TestCase):
@@ -62,3 +64,16 @@ class TestDataset(TestCase):
         self.ds.discretize('col1', [(0, 2), (2, 4)])
         self.assertListEqual(list(self.ds.features['col1'].values),
                              [1, 1, 2, 1, 1, 1, 1, 2, 1, 1])
+
+    def test_samples_matching(self):
+        try:
+            self.ds.samples_matching(3)
+        except AttributeError as e:
+            self.assertIsInstance(e, AttributeError)
+
+        self.assertListEqual(self.ds.samples_matching('c', 'col2'), [9])
+        self.assertListEqual(self.ds.samples_matching(3, 'col1'), [2, 7])
+        self.ds.set_target('col3')
+        self.assertListEqual(self.ds.samples_matching('0'), [3, 4, 7, 9])
+        self.ds.unset_target()
+        self.assertListEqual(self.ds.samples_matching('0', 'col3'), [3, 4, 7, 9])

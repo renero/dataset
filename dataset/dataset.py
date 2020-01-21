@@ -447,6 +447,44 @@ class Dataset(object):
             assert what in self.meta_tags
             return self.features.loc[:, self.meta[what]]
 
+    def samples_matching(self, value=None, feature=None):
+        """
+        Return the a list with the indexes of those samples matching a given
+        criteria. The match can be set on target variable, or any other
+        column name.
+
+        Args:
+            value:
+            feature:
+
+        Returns:
+            A list with the index values of those samples matching.
+
+        Examples
+            >>> my_data.samples_matching('red')
+
+            returns the indices of those samples whose `target` matches the
+            value `red`.
+
+            >>> my_data.samples_matching('column_3', 75)
+
+            returns the indices of those samples whose feature `column_3`
+            values 75.
+
+        """
+        if feature is None:
+            sample_indices = self.all.index[
+                self.all[self.target.name] == value].to_list()
+        else:
+            assert feature in self.names(), \
+                "Feature ({}) is not present in dataset".format(feature)
+            assert feature is not None and value is not None, \
+                "A feature name and a value must be provided"
+            sample_indices = self.all.index[self.all[feature] == value].to_list()
+
+        return sample_indices
+
+
     def names(self, what='all'):
         """
         Returns a the names of the columns of the dataset for which the arg
@@ -470,6 +508,7 @@ class Dataset(object):
         assert what in self.meta_tags
         return self.meta[what]
 
+
     def discretize(self, column, bins, category_names=None):
         """
         Makes a feature, which is normally numerical, categorical by binning its
@@ -481,19 +520,23 @@ class Dataset(object):
 
                 >>> [(15, 20), (20, 25), (25, 30), (30, 35), (35, 40)]
 
-            category_names: An array with names or values we want for our new categories. If None
-                            a simple array with ordinal number of the category is used. In the
+            category_names: An array with names or values we want for our new
+                            categories. If None a simple array with ordinal
+                            number of the category is used. In the
                             example above, it should be an array from 1 .. 5.
 
         Returns: The dataset modified
 
         Example::
 
-            # Variable "x3" contains the number of sons of a person as an integer ranging between
-            # values 0 and 10. We want to convert that numerical value into a categorical one with
-            # a list of (say) 4 possible values, for the number of sons within given ranges:
+            # Variable "x3" contains the number of sons of a person as an
+            # integer ranging between values 0 and 10. We want to convert
+            # that numerical value into a categorical one with a list
+            # of (say) 4 possible values, for the number of sons within
+            # given ranges:
 
-            >>> my_data.discretize('x3', [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)], [0, 1, 2, 3, 4])
+            >>> my_data.discretize('x3',
+                    [(0, 2), (2, 4), (4, 6), (6, 8)], [1, 2, 3, 4])
 
         """
         assert column in self.numerical_features, \
@@ -511,6 +554,7 @@ class Dataset(object):
         self.data[column] = x
         self.update()
         return self
+
 
     def onehot_encode(self, to_convert=None):
         """
@@ -562,6 +606,7 @@ class Dataset(object):
         self.update()
         return self
 
+
     def add_column(self, series):
         """
         Add a Series as a new column to the dataset.
@@ -581,6 +626,7 @@ class Dataset(object):
             self.update()
         return self
 
+
     def add_columns(self, dataframe):
         """
         Add a DataFrame as a new column to the dataset.
@@ -597,6 +643,7 @@ class Dataset(object):
         self.features = pd.concat([self.features, dataframe], axis=1)
         self.update()
         return self
+
 
     def drop_columns(self, columns_list):
         """
@@ -620,6 +667,7 @@ class Dataset(object):
         self.update()
         return self
 
+
     def keep_columns(self, to_keep):
         """
         Keep only one or a list of columns from the dataset.
@@ -638,6 +686,7 @@ class Dataset(object):
         to_drop = list(set(list(self.features)) - set(to_keep))
         self.drop_columns(to_drop)
         return self
+
 
     def aggregate(self,
                   col_list,
@@ -679,6 +728,7 @@ class Dataset(object):
             self.update()
         return self
 
+
     def drop_samples(self, index_list):
         """
         Remove the list of samples from the dataset.
@@ -695,6 +745,7 @@ class Dataset(object):
         self.update()
         return self
 
+
     def nas(self):
         """
         Returns the list of features that present NA entries
@@ -702,6 +753,7 @@ class Dataset(object):
         :return: the list of feature names presenting NA
         """
         return self.names('numerical_na') + self.names('categorical_na')
+
 
     def replace_na(self, column, value):
         """
@@ -721,6 +773,7 @@ class Dataset(object):
         self.update()
         return self
 
+
     def drop_na(self):
         """
         Drop samples with NAs from the features. If any value is infinite
@@ -734,6 +787,7 @@ class Dataset(object):
         self.target = self.target.reset_index()
         self.update()
         return self
+
 
     def split(self,
               seed=1024,
@@ -786,6 +840,7 @@ class Dataset(object):
 
         return Split(x_splits), Split(y_splits)
 
+
     def to_numerical(self, to_convert):
         """
         Convert the specified column or columns to numbers
@@ -811,6 +866,7 @@ class Dataset(object):
 
         self.update()
         return self
+
 
     def to_float(self, to_convert=None):
         """
@@ -845,6 +901,7 @@ class Dataset(object):
 
         return self.update()
 
+
     def to_int(self, to_convert=None):
         """
         Convert a column or list of columns to integer values.
@@ -852,7 +909,8 @@ class Dataset(object):
 
         Args:
             to_convert: the column name or list of column names that we want
-                        to convert.
+                        to convert. If none specified, all numerical columns
+                        are converted to int type.
 
         Returns: The dataset
 
@@ -876,6 +934,7 @@ class Dataset(object):
         self.data[to_convert] = self.data[to_convert].astype(int)
         return self.update()
 
+
     def to_categorical(self, to_convert):
         """
         Convert the specified column or columns to categories
@@ -895,6 +954,7 @@ class Dataset(object):
 
         self.update()
         return self
+
 
     def merge_categories(self, column, old_values, new_value):
         """
@@ -925,6 +985,7 @@ class Dataset(object):
         self.update()
         return self
 
+
     def merge_values(self, column, old_values, new_value):
         """
         Same method as 'merge_categories' but for numerical values.
@@ -954,6 +1015,7 @@ class Dataset(object):
             lambda x: new_value if x in old_values else x).astype('float64')
         self.update()
         return self
+
 
     #
     # Description methods, printing out summaries for dataset or features.
@@ -994,6 +1056,7 @@ class Dataset(object):
             print('Target: Not set')
         return
 
+
     @staticmethod
     def describe_categorical(feature, inline=False):
         """
@@ -1029,6 +1092,7 @@ class Dataset(object):
             body_formatted = body.format(*values_flattened)
             return header + body_formatted + trail
 
+
     @staticmethod
     def describe_numerical(feature, inline=False):
         """
@@ -1051,6 +1115,7 @@ class Dataset(object):
             values_flattened = list(sum(values, ()))
             body_formatted = body.format(*values_flattened)
             return body_formatted
+
 
     def describe(self, feature_name=None, inline=False):
         """
@@ -1089,6 +1154,7 @@ class Dataset(object):
         else:
             return self.describe_numerical(feature, inline)
 
+
     def summary(self, what='all'):
         """
         Printout a summary of each feature.
@@ -1122,6 +1188,7 @@ class Dataset(object):
                 feature_formatted, self.select(what)[feature_name].dtype.name,
                 self.describe(feature_name, inline=True)))
         return
+
 
     def table(self, what='all', max_width=80):
         """
@@ -1166,6 +1233,7 @@ class Dataset(object):
         print('-' * ((max_fields * max_length) + (max_fields - 1)))
         return
 
+
     #
     # Properties
     #
@@ -1173,9 +1241,11 @@ class Dataset(object):
     def numerical_features(self):
         return self.names('numerical')
 
+
     @property
     def categorical_features(self):
         return self.names('categorical')
+
 
     #
     # Plot functions
@@ -1192,6 +1262,7 @@ class Dataset(object):
                     square=True, linewidths=.5, cbar_kws={"shrink": .5})
         plt.show()
         return
+
 
     def plot_double_density(self, feature, category=None):
         """
@@ -1224,6 +1295,7 @@ class Dataset(object):
                          kde_kws={'shade': True},
                          label=str(value))
 
+
     def plot_double_hist(self, feature, category=None):
         """
         Double histogram plot between a feature and a reference category.
@@ -1255,6 +1327,7 @@ class Dataset(object):
                          kde_kws={'shade': True},
                          label=str(value))
         plt.legend(loc='best')
+
 
     def plot_against_target(self, columns_list, bins=50):
         """
@@ -1305,6 +1378,7 @@ class Dataset(object):
                 plt.xlabel(column)
                 plt.ylabel('count')
 
+
     #
     # Private Methods
     #
@@ -1326,6 +1400,7 @@ class Dataset(object):
 
         return to_convert
 
+
     def __assert_category_values(self, category):
         if category is None or self.target.name == category:
             categories = self.target.unique()
@@ -1337,6 +1412,7 @@ class Dataset(object):
             category_series = self.features[category]
 
         return categories, category_series
+
 
     @staticmethod
     def __numerical_description(feature):

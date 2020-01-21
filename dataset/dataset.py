@@ -36,9 +36,9 @@ class Dataset(object):
     work on the most common tasks related to data preparation and
     feature engineering.::
 
-        >>> my_data = Dataset(URL)
+        my_data = Dataset(URL)
 
-        >>> my_data = Dataset.from_dataframe(my_dataframe)
+        my_data = Dataset.from_dataframe(my_dataframe)
 
     """
 
@@ -79,7 +79,7 @@ class Dataset(object):
             colnames = ['x{}'.format(col) for col in list(self.features)]
             self.features.columns = colnames
         self.to_float()
-        self.update()
+        self.__update()
 
     @classmethod
     def from_dataframe(cls, df):
@@ -104,16 +104,13 @@ class Dataset(object):
 
         self.target = self.features.loc[:, target_name].copy()
         self.features.drop(target_name, axis=1, inplace=True)
-        self.update()
+        self.__update()
         return self
 
     def unset_target(self):
         """
         Undo the `set_target()` operation. The feature `target_name` returns
         to the DataFrame with the rest of the features.
-
-        :param target_name: The name of the column we want to be set as the
-            target variable for this dataset.
 
         Example::
 
@@ -124,10 +121,10 @@ class Dataset(object):
 
         self.features[self.target.name] = self.target.values
         self.target = None
-        self.update()
+        self.__update()
         return self
 
-    def update(self):
+    def __update(self):
         """
         Builds meta-information about the dataset, considering the
         features that are categorical, numerical or does/doesn't contain NA's.
@@ -206,7 +203,7 @@ class Dataset(object):
             scaled_features,
             index=subset.index,
             columns=subset.columns)
-        self.update()
+        self.__update()
         if return_series is True:
             return self.features[self.names(features_of_type)]
         else:
@@ -232,7 +229,7 @@ class Dataset(object):
             normed_features,
             index=subset.index,
             columns=subset.columns)
-        self.update()
+        self.__update()
         if return_series is True:
             return self.features[self.names(features_of_type)]
 
@@ -367,7 +364,7 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.stepwise_selection()
+            my_data.stepwise_selection()
 
         See <https://en.wikipedia.org/wiki/Stepwise_regression>
         for the details
@@ -461,12 +458,12 @@ class Dataset(object):
             A list with the index values of those samples matching.
 
         Examples
-            >>> my_data.samples_matching('red')
+            my_data.samples_matching('red')
 
             returns the indices of those samples whose `target` matches the
             value `red`.
 
-            >>> my_data.samples_matching('column_3', 75)
+            my_data.samples_matching('column_3', 75)
 
             returns the indices of those samples whose feature `column_3`
             values 75.
@@ -480,10 +477,10 @@ class Dataset(object):
                 "Feature ({}) is not present in dataset".format(feature)
             assert feature is not None and value is not None, \
                 "A feature name and a value must be provided"
-            sample_indices = self.all.index[self.all[feature] == value].to_list()
+            sample_indices = self.all.index[
+                self.all[feature] == value].to_list()
 
         return sample_indices
-
 
     def names(self, what='all'):
         """
@@ -508,7 +505,6 @@ class Dataset(object):
         assert what in self.meta_tags
         return self.meta[what]
 
-
     def discretize(self, column, bins, category_names=None):
         """
         Makes a feature, which is normally numerical, categorical by binning its
@@ -518,7 +514,7 @@ class Dataset(object):
             column: The name of the feature to be binned
             bins: the list of bins as an array of values of the form
 
-                >>> [(15, 20), (20, 25), (25, 30), (30, 35), (35, 40)]
+                [(15, 20), (20, 25), (25, 30), (30, 35), (35, 40)]
 
             category_names: An array with names or values we want for our new
                             categories. If None a simple array with ordinal
@@ -535,7 +531,7 @@ class Dataset(object):
             # of (say) 4 possible values, for the number of sons within
             # given ranges:
 
-            >>> my_data.discretize('x3',
+            my_data.discretize('x3',
                     [(0, 2), (2, 4), (4, 6), (6, 8)], [1, 2, 3, 4])
 
         """
@@ -548,13 +544,12 @@ class Dataset(object):
         if category_names is None:
             x.categories = [i + 1 for i in range(len(bins))]
         else:
-            assert len(category_names) == len(
-                bins), "Num of categories passed does not matched number of bins."
+            assert len(category_names) == len(bins), \
+                "Num of categories passed does not matched number of bins."
             x.categories = category_names
         self.data[column] = x
-        self.update()
+        self.__update()
         return self
-
 
     def onehot_encode(self, to_convert=None):
         """
@@ -571,17 +566,18 @@ class Dataset(object):
         Example::
 
             # Encodes a single column named 'my_column_name'
-            >>> my_data.onehot_encode('my_column_name')
+            my_data.onehot_encode('my_column_name')
 
             # Encodes 'col1' and 'col2'
-            >>> my_data.onehot_encode(['col1', 'col2'])
+            my_data.onehot_encode(['col1', 'col2'])
 
             # Encodes all categorical features in the dataset
-            >>> my_data.onehot_encode(my_data.names('categorical'))
+            my_data.onehot_encode(my_data.names('categorical'))
 
         or::
 
-            >>> my_data.onehot_encode()
+            my_data.onehot_encode()
+
         """
         if to_convert is None:
             to_encode = list(self.categorical)
@@ -603,9 +599,8 @@ class Dataset(object):
                  ],
                 axis=1)
         self.features = new_df.copy()
-        self.update()
+        self.__update()
         return self
-
 
     def add_column(self, series):
         """
@@ -617,15 +612,14 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.add_column(series)
+            my_data.add_column(series)
 
-            >>> my_data.add_column(name=pandas.Series().values)
+            my_data.add_column(name=pandas.Series().values)
         """
         if series.name not in self.names('features'):
             self.features[series.name] = series.values
-            self.update()
+            self.__update()
         return self
-
 
     def add_columns(self, dataframe):
         """
@@ -636,14 +630,13 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.add_columns(df)
+            my_data.add_columns(df)
         """
         assert isinstance(dataframe, pd.DataFrame) is True, \
             "Argument dataframe must be a pandas DataFrame"
         self.features = pd.concat([self.features, dataframe], axis=1)
-        self.update()
+        self.__update()
         return self
-
 
     def drop_columns(self, columns_list):
         """
@@ -656,17 +649,16 @@ class Dataset(object):
 
         Examples::
 
-            >>> my_data.drop_columns('column_name')
-            >>> my_data.drop_columns(['column1', 'column2', 'column3'])
+            my_data.drop_columns('column_name')
+            my_data.drop_columns(['column1', 'column2', 'column3'])
         """
         if isinstance(columns_list, list) is not True:
             columns_list = [columns_list]
         for column in columns_list:
             if column in self.names('features'):
                 self.features.drop(column, axis=1, inplace=True)
-        self.update()
+        self.__update()
         return self
-
 
     def keep_columns(self, to_keep):
         """
@@ -678,15 +670,14 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.keep_columns('column_name')
-            >>> my_data.keep_columns(['column1', 'column2', 'column3'])
+            my_data.keep_columns('column_name')
+            my_data.keep_columns(['column1', 'column2', 'column3'])
         """
         if isinstance(to_keep, list) is not True:
             to_keep = [to_keep]
         to_drop = list(set(list(self.features)) - set(to_keep))
         self.drop_columns(to_drop)
         return self
-
 
     def aggregate(self,
                   col_list,
@@ -710,7 +701,7 @@ class Dataset(object):
         Example: if we want to sum the values of column1 and column2 into a
         new column called 'column3', we use::
 
-            >>> my_data.aggregate(['column1', 'column2'], 'column3', 'sum')
+            my_data.aggregate(['column1', 'column2'], 'column3', 'sum')
 
         As a result, ``my_data`` will remove ``column1`` and ``column2``,
         and the operation will be the sum of the values, as it is the default
@@ -725,9 +716,8 @@ class Dataset(object):
         if drop_columns is True:
             self.drop_columns(col_list)
         else:
-            self.update()
+            self.__update()
         return self
-
 
     def drop_samples(self, index_list):
         """
@@ -742,9 +732,8 @@ class Dataset(object):
             self.target = self.target.drop(self.target.index[index_list])
         self.features.reset_index(inplace=True, drop=True)
         self.target.reset_index(inplace=True, drop=True)
-        self.update()
+        self.__update()
         return self
-
 
     def nas(self):
         """
@@ -753,7 +742,6 @@ class Dataset(object):
         :return: the list of feature names presenting NA
         """
         return self.names('numerical_na') + self.names('categorical_na')
-
 
     def replace_na(self, column, value):
         """
@@ -770,9 +758,8 @@ class Dataset(object):
                 self.features[col].fillna(value, inplace=True)
         else:
             self.features[column].fillna(value, inplace=True)
-        self.update()
+        self.__update()
         return self
-
 
     def drop_na(self):
         """
@@ -785,9 +772,8 @@ class Dataset(object):
         self.features.dropna()
         self.features = self.features.reset_index()
         self.target = self.target.reset_index()
-        self.update()
+        self.__update()
         return self
-
 
     def split(self,
               seed=1024,
@@ -809,13 +795,13 @@ class Dataset(object):
         Example::
 
             # Generate the splits (80-20)
-            >>> X, y = my_data.split()
+            X, y = my_data.split()
 
             # Create an instance of the model, and use the training set to
             # fit it, and the test set to score it.
-            >>> model = LinearRegression()
-            >>> model.fit(X.train, y.train)
-            >>> model.score(X.test, y.test)
+            model = LinearRegression()
+            model.fit(X.train, y.train)
+            model.score(X.test, y.test)
 
         """
         assert self.target is not None, \
@@ -840,7 +826,6 @@ class Dataset(object):
 
         return Split(x_splits), Split(y_splits)
 
-
     def to_numerical(self, to_convert):
         """
         Convert the specified column or columns to numbers
@@ -864,9 +849,8 @@ class Dataset(object):
             else:
                 self.target = pd.to_numeric(self.target)
 
-        self.update()
+        self.__update()
         return self
-
 
     def to_float(self, to_convert=None):
         """
@@ -882,16 +866,16 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.to_float(my_data.numerical_features)
+            my_data.to_float(my_data.numerical_features)
 
         which is equivalent to
 
-            >>> my_data.to_float()
+            my_data.to_float()
 
         We can also specify a single or multiple features:
 
-            >>> my_data.to_float('feature_15')
-            >>> my_data.to_float(['feature_15', 'feature_21'])
+            my_data.to_float('feature_15')
+            my_data.to_float(['feature_15', 'feature_21'])
 
         """
         to_convert = self.__assert_list_of_numericals(to_convert)
@@ -899,8 +883,7 @@ class Dataset(object):
             self.features[column_name] = pd.to_numeric(
                 self.features[column_name]).astype(float)
 
-        return self.update()
-
+        return self.__update()
 
     def to_int(self, to_convert=None):
         """
@@ -916,24 +899,23 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.to_int(my_data.numerical_features)
+            my_data.to_int(my_data.numerical_features)
 
         which is equivalent to
 
-            >>> my_data.to_int()
+            my_data.to_int()
 
         We can also specify a single or multiple features:
 
-            >>> my_data.to_int('feature_15')
-            >>> my_data.to_int(['feature_15', 'feature_21'])
+            my_data.to_int('feature_15')
+            my_data.to_int(['feature_15', 'feature_21'])
 
         """
         to_convert = self.__assert_list_of_numericals(to_convert)
 
         # Bulk conversion..
         self.data[to_convert] = self.data[to_convert].astype(int)
-        return self.update()
-
+        return self.__update()
 
     def to_categorical(self, to_convert):
         """
@@ -952,9 +934,8 @@ class Dataset(object):
             else:
                 self.target = self.target.apply(str)
 
-        self.update()
+        self.__update()
         return self
-
 
     def merge_categories(self, column, old_values, new_value):
         """
@@ -969,7 +950,7 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.merge_categories(column='color',
+            my_data.merge_categories(column='color',
                                          old_values=['grey', 'black'],
                                          new_value='dark')
         """
@@ -982,9 +963,8 @@ class Dataset(object):
 
         self.features[column] = self.features[column].apply(
             lambda x: new_value if x in old_values else x).astype('object')
-        self.update()
+        self.__update()
         return self
-
 
     def merge_values(self, column, old_values, new_value):
         """
@@ -1000,7 +980,7 @@ class Dataset(object):
 
         Example::
 
-            >>> my_data.merge_values(column='years',
+            my_data.merge_values(column='years',
                                      old_values=['2001', '2002'],
                                      new_value='2000')
         """
@@ -1013,9 +993,8 @@ class Dataset(object):
 
         self.features[column] = self.features[column].apply(
             lambda x: new_value if x in old_values else x).astype('float64')
-        self.update()
+        self.__update()
         return self
-
 
     #
     # Description methods, printing out summaries for dataset or features.
@@ -1029,7 +1008,7 @@ class Dataset(object):
         :return: nothing
         """
         if self.meta is None:
-            self.update()
+            self.__update()
 
         print('{} Features. {} Samples'.format(
             len(self.meta['features']), self.features.shape[0]))
@@ -1056,15 +1035,15 @@ class Dataset(object):
             print('Target: Not set')
         return
 
-
     @staticmethod
     def describe_categorical(feature, inline=False):
         """
         Describe a categorical column by printing num classes and proportion
         metrics.
 
-        :param feature: The catgorical feature to be described.
-        :return: nothing
+        Args:
+            feature: The categorical feature to be described.
+            inline: Print out without newlines.
         """
         num_categories = feature.nunique()
         cat_names = feature.unique()
@@ -1092,7 +1071,6 @@ class Dataset(object):
             body_formatted = body.format(*values_flattened)
             return header + body_formatted + trail
 
-
     @staticmethod
     def describe_numerical(feature, inline=False):
         """
@@ -1115,7 +1093,6 @@ class Dataset(object):
             values_flattened = list(sum(values, ()))
             body_formatted = body.format(*values_flattened)
             return body_formatted
-
 
     def describe(self, feature_name=None, inline=False):
         """
@@ -1154,7 +1131,6 @@ class Dataset(object):
         else:
             return self.describe_numerical(feature, inline)
 
-
     def summary(self, what='all'):
         """
         Printout a summary of each feature.
@@ -1188,7 +1164,6 @@ class Dataset(object):
                 feature_formatted, self.select(what)[feature_name].dtype.name,
                 self.describe(feature_name, inline=True)))
         return
-
 
     def table(self, what='all', max_width=80):
         """
@@ -1233,7 +1208,6 @@ class Dataset(object):
         print('-' * ((max_fields * max_length) + (max_fields - 1)))
         return
 
-
     #
     # Properties
     #
@@ -1241,11 +1215,9 @@ class Dataset(object):
     def numerical_features(self):
         return self.names('numerical')
 
-
     @property
     def categorical_features(self):
         return self.names('categorical')
-
 
     #
     # Plot functions
@@ -1263,7 +1235,6 @@ class Dataset(object):
         plt.show()
         return
 
-
     def plot_double_density(self, feature, category=None):
         """
         Double density plot between a feature and a reference category.
@@ -1278,11 +1249,11 @@ class Dataset(object):
 
             # represent multiple density plots, one per unique value of the
             # target
-            >>> my_data.plot_double_density(my_feature)
+            my_data.plot_double_density(my_feature)
 
             # represent double density plots, one per unique value of the
             # categorical feature 'my_feature2'
-            >>> my_data.plot_double_density(my_feature1, my_feature2)
+            my_data.plot_double_density(my_feature1, my_feature2)
         """
         # Get the list of categories
         categories, category_series = self.__assert_category_values(category)
@@ -1294,7 +1265,6 @@ class Dataset(object):
                          hist=False, kde=True,
                          kde_kws={'shade': True},
                          label=str(value))
-
 
     def plot_double_hist(self, feature, category=None):
         """
@@ -1310,11 +1280,11 @@ class Dataset(object):
 
             # represent multiple density plots, one per unique value of the
             # target
-            >>> my_data.plot_double_hist(my_feature)
+            my_data.plot_double_hist(my_feature)
 
             # represent double density plots, one per unique value of the
             # categorical feature 'my_feature2'
-            >>> my_data.double_hist(my_feature1, my_feature2)
+            my_data.double_hist(my_feature1, my_feature2)
         """
         # Get the list of categories
         categories, category_series = self.__assert_category_values(category)
@@ -1328,7 +1298,6 @@ class Dataset(object):
                          label=str(value))
         plt.legend(loc='best')
 
-
     def plot_against_target(self, columns_list, bins=50):
         """
         Plots a histogram of all (or a specific) feature along with target
@@ -1340,8 +1309,8 @@ class Dataset(object):
 
         Example:
 
-            >>> my_data.plot_against_target('column_name')
-            >>> my_data.plot_against_target(['column1', 'column2', 'column3'])
+            my_data.plot_against_target('column_name')
+            my_data.plot_against_target(['column1', 'column2', 'column3'])
 
         """
         assert self.names('target') is not None, \
@@ -1378,7 +1347,6 @@ class Dataset(object):
                 plt.xlabel(column)
                 plt.ylabel('count')
 
-
     #
     # Private Methods
     #
@@ -1400,7 +1368,6 @@ class Dataset(object):
 
         return to_convert
 
-
     def __assert_category_values(self, category):
         if category is None or self.target.name == category:
             categories = self.target.unique()
@@ -1412,7 +1379,6 @@ class Dataset(object):
             category_series = self.features[category]
 
         return categories, category_series
-
 
     @staticmethod
     def __numerical_description(feature):

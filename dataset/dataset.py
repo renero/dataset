@@ -457,16 +457,17 @@ class Dataset(object):
         Returns:
             A list with the index values of those samples matching.
 
-        Examples
+        Examples:
+
             my_data.samples_matching('red')
 
-            returns the indices of those samples whose `target` matches the
-            value `red`.
+        returns the indices of those samples whose `target` matches the
+        value `red`.
 
             my_data.samples_matching('column_3', 75)
 
-            returns the indices of those samples whose feature `column_3`
-            values 75.
+        returns the indices of those samples whose feature `column_3`
+        values 75.
 
         """
         if feature is None:

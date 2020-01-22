@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.preprocessing import StandardScaler, PowerTransformer
 from sklearn_pandas import DataFrameMapper
+from skrebate import ReliefF
 
 from dataset.correlations import cramers_v
 from dataset.split import Split
@@ -1347,6 +1348,53 @@ class Dataset(object):
                 plt.legend([target_name + ': 0', target_name + ': 1'])
                 plt.xlabel(column)
                 plt.ylabel('count')
+
+    def plot_importance(self, num_features=10, num_neighbors=10, abs_imp=False):
+        """
+        Plots the features importance, using the ReliefF algorithm as
+        implemented in the `rebate` library.
+
+        Args:
+            num_features:   The nr of features we want to display
+            num_neighbors:  The nr of neighbors to consider when computing the
+                            features importance
+            abs_imp:        if True, importance is displayed taking the ABS()
+
+        Returns:
+
+        """
+        assert num_features <= len(
+            self.features), \
+            "Larger nr of features ({}) than available ({})".format(
+                num_features, len(self.features))
+        assert self.target is not None, \
+            "Target feature must be specified before computing importance"
+        assert num_neighbors <= self.data.shape[0], \
+            "Larger nr of neighbours than samples ({})".format(
+                self.data.shape[0])
+
+        my_features = self.data.values  # the numpy array inside the dataframe
+        my_labels = self.target.values.ravel()  # the target as a 1D array.
+
+        fs = ReliefF(n_features_to_select=num_features,
+                     n_neighbors=num_neighbors)
+        fs.fit_transform(my_features, my_labels)
+
+        if abs_imp is True:
+            importances = abs(fs.feature_importances_[:num_features])
+        else:
+            importances = fs.feature_importances_[:num_features]
+        indices = np.argsort(importances)[:num_features]
+
+        plt.figure(figsize=(8, 10))
+        plt.title("Features importance (ReliefF)")
+        plt.barh(range(num_features), importances[indices],
+                 color="r",
+                 xerr=np.std(importances),
+                 align="center")
+        plt.yticks(range(num_features), self.features.columns[indices])
+        plt.ylim([-1, num_features])
+        plt.show()
 
     #
     # Private Methods

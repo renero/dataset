@@ -1361,6 +1361,7 @@ class Dataset(object):
             abs_imp:        if True, importance is displayed taking the ABS()
 
         Returns:
+            A dictionary with the feature names and their importance.
 
         """
         assert num_features <= len(
@@ -1395,6 +1396,8 @@ class Dataset(object):
         plt.yticks(range(num_features), self.features.columns[indices])
         plt.ylim([-1, num_features])
         plt.show()
+
+        return dict(zip(self.features.columns[indices], importances[indices]))
 
     #
     # Private Methods

@@ -9,3 +9,7 @@ skrebate
 statsmodels
 scikit_learn
 atlas
+sphinx
+sphinx_rtd_theme
+m2r
+

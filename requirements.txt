@@ -5,6 +5,7 @@ pandas
 seaborn
 numpy
 sklearn_pandas
+skrebate
 statsmodels
 scikit_learn
 atlas

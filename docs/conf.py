@@ -6,14 +6,19 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 sys.path.append('/Users/renero/Documents/SideProjects/dataset/dataset')
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.napoleon', 'm2r']
+
+napoleon_google_docstring = True
+napoleon_use_param = True
+napoleon_use_ivar = True
+
 source_suffix = '.rst'
 master_doc = 'index'
 project = u'Dataset'
 copyright = u'J. Renero'
 exclude_patterns = ['_build']
 pygments_style = 'sphinx'
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 autoclass_content = "both"
 
 autodoc_default_options = {

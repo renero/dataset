@@ -24,6 +24,7 @@ or, if you prefer to create from an existing Pandas DataFrame::
 Contents:
 
 .. toctree::
-  :maxdepth: 1
+  :maxdepth: 2
+  :caption: Contents:
 
   dataset

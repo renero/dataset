@@ -3,6 +3,7 @@ This is the package dataset.
 """
 import warnings
 from copy import copy
+from math import log2
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -297,6 +298,14 @@ class Dataset(object):
     def categorical_correlated(self, threshold=0.9):
         """
         Generates a correlation matrix for the categorical variables in dataset
+        Calculates Cramer's V statistic for categorical-categorical association.
+        Uses correction from Bergsma and Wicher, Journal of the Korean
+        Statistical Society 42 (2013): 323-328. This is a symmetric
+        coefficient: V(x,y) = V(y,x)
+        Original function taken from:
+            https://stackoverflow.com/a/46498792/5863503
+        Wikipedia:
+            http://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V
 
         :param threshold: Limit from which correlations is considered high.
         :return: The list of categorical variables with HIGH correlation and
@@ -337,6 +346,67 @@ class Dataset(object):
             if (majority_freq / len(self.features)) > threshold:
                 under_rep.append(column)
         return under_rep
+
+    def IG(self, vble_name):
+        """
+        Computes the Information Gain between a variable –whose name is passed,
+        and the target variable.
+
+        Args:
+            vble_name: A string with the name of the categorical vble.
+
+        Returns:
+            The IG
+
+        """
+        assert self.target is not None, "Target must be set before calling IG"
+        assert vble_name in self.categorical_features, \
+            "Variable must be categorical to compute IG"
+
+        def entropy(distribution):
+            def H(p):
+                return 0. if p == 0. else p * log2(p)
+
+            return -sum([H(distribution[i]) for i in range(len(distribution))])
+
+        target_num_unique_values = self.target.nunique()
+        target_unique_values = self.target.unique()
+        target_value_counts = self.target.value_counts()
+        target_num_samples = sum([target_value_counts[target_unique_values[i]]
+                                  for i in range(target_num_unique_values)])
+        target_distribution = [
+            target_value_counts[target_unique_values[i]] / target_num_samples \
+            for i in range(target_num_unique_values)]
+
+        target_entropy = entropy(target_distribution)
+
+        vble = self.data[vble_name]
+        vble_num_unique_values = vble.nunique()
+        vble_unique_values = vble.unique()
+        vble_value_counts = vble.value_counts()
+        vble_num_samples = sum(
+            [vble_value_counts[vble_unique_values[i]] for i in
+             range(vble_num_unique_values)])
+
+        vble_distribution = [
+            vble_value_counts[vble_unique_values[i]] / vble_num_samples \
+            for i in range(vble_num_unique_values)]
+
+        vble_distribution = dict(zip(vble_unique_values, vble_distribution))
+
+        xt = pd.crosstab(vble, self.target)
+
+        cond_entropy = []
+        for i in range(xt.shape[0]):
+            row_distribution = [xt.iloc[i, j] / xt.iloc[i].sum() for j in
+                                range(xt.shape[1])]
+            cond_entropy.append(entropy(row_distribution))
+        vble_entropy = dict(zip(xt.index, cond_entropy))
+        vble_cond_entropy = sum([vble_distribution[v] * vble_entropy[v] for v in
+                                 vble_unique_values])
+        IG = target_entropy - vble_cond_entropy
+
+        return IG
 
     def stepwise_selection(self,
                            initial_list=None,
@@ -411,6 +481,49 @@ class Dataset(object):
             if not changed:
                 break
         return included
+
+    def features_importance(self,
+                            num_features=10,
+                            num_neighbors=10,
+                            abs_imp=False):
+        """
+        Computes the features importance, using the ReliefF algorithm as
+        implemented in the `rebate` library.
+
+        Args:
+            num_features:   The nr of features we want to display
+            num_neighbors:  The nr of neighbors to consider when computing the
+                            features importance
+            abs_imp:        if True, importance is displayed taking the ABS()
+
+        Returns:
+            A sorted dictionary with the feature names and their importance.
+
+        """
+        assert num_features <= len(
+            self.features), \
+            "Larger nr of features ({}) than available ({})".format(
+                num_features, len(self.features))
+        assert self.target is not None, \
+            "Target feature must be specified before computing importance"
+        assert num_neighbors <= self.data.shape[0], \
+            "Larger nr of neighbours than samples ({})".format(
+                self.data.shape[0])
+
+        my_features = self.data.values  # the numpy array inside the dataframe
+        my_labels = self.target.values.ravel()  # the target as a 1D array.
+
+        fs = ReliefF(n_features_to_select=num_features,
+                     n_neighbors=num_neighbors)
+        fs.fit_transform(my_features, my_labels)
+
+        if abs_imp is True:
+            importances = abs(fs.feature_importances_[:num_features])
+        else:
+            importances = fs.feature_importances_[:num_features]
+        indices = np.argsort(importances)[:num_features]
+
+        return dict(zip(self.features.columns[indices], importances[indices]))
 
     #
     # Methods are related to data manipulation of the pandas dataframe.
@@ -1361,43 +1474,24 @@ class Dataset(object):
             abs_imp:        if True, importance is displayed taking the ABS()
 
         Returns:
-            A dictionary with the feature names and their importance.
+            None
 
         """
-        assert num_features <= len(
-            self.features), \
-            "Larger nr of features ({}) than available ({})".format(
-                num_features, len(self.features))
-        assert self.target is not None, \
-            "Target feature must be specified before computing importance"
-        assert num_neighbors <= self.data.shape[0], \
-            "Larger nr of neighbours than samples ({})".format(
-                self.data.shape[0])
-
-        my_features = self.data.values  # the numpy array inside the dataframe
-        my_labels = self.target.values.ravel()  # the target as a 1D array.
-
-        fs = ReliefF(n_features_to_select=num_features,
-                     n_neighbors=num_neighbors)
-        fs.fit_transform(my_features, my_labels)
-
-        if abs_imp is True:
-            importances = abs(fs.feature_importances_[:num_features])
-        else:
-            importances = fs.feature_importances_[:num_features]
-        indices = np.argsort(importances)[:num_features]
+        vbles_importance = self.features_importance(num_features,
+                                                    num_neighbors,
+                                                    abs_imp)
+        top_features = list(vbles_importance.keys())
+        importances = list(vbles_importance.values())
 
         plt.figure(figsize=(8, 10))
         plt.title("Features importance (ReliefF)")
-        plt.barh(range(num_features), importances[indices],
+        plt.barh(range(num_features), importances,
                  color="r",
                  xerr=np.std(importances),
                  align="center")
-        plt.yticks(range(num_features), self.features.columns[indices])
+        plt.yticks(range(num_features), top_features)
         plt.ylim([-1, num_features])
         plt.show()
-
-        return dict(zip(self.features.columns[indices], importances[indices]))
 
     #
     # Private Methods

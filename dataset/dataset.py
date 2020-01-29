@@ -881,12 +881,20 @@ class Dataset(object):
         Drop samples with NAs from the features. If any value is infinite
         or -infinite, it is converted to NA, and removed also.
 
+        Example:
+
+            my_data.drop_na()
+
         :return: object
         """
-        self.features.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
-        self.features.dropna()
-        self.features = self.features.reset_index()
-        self.target = self.target.reset_index()
+        self.features.replace([np.inf, -np.inf], np.nan).dropna(axis=1,
+                                                                inplace=True)
+        self.features.dropna(inplace=True)
+        self.features = self.features.reset_index(drop=True)
+        if self.target is not None:
+            self.target = self.target[
+                self.target.index.isin(self.data.index)]
+            self.target = self.target.reset_index(drop=True)
         self.__update()
         return self
 

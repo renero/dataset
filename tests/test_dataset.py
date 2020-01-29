@@ -76,7 +76,8 @@ class TestDataset(TestCase):
         self.ds.set_target('col3')
         self.assertListEqual(self.ds.samples_matching('0'), [3, 4, 7, 9])
         self.ds.unset_target()
-        self.assertListEqual(self.ds.samples_matching('0', 'col3'), [3, 4, 7, 9])
+        self.assertListEqual(self.ds.samples_matching('0', 'col3'),
+                             [3, 4, 7, 9])
 
     def test_IG(self):
         df = pd.DataFrame({
@@ -86,3 +87,30 @@ class TestDataset(TestCase):
         self.ds = Dataset.from_dataframe(df)
         self.ds.set_target('sex')
         self.assertAlmostEqual(self.ds.IG('pulse'), 0.2812908992306927)
+
+    def test_drop_na(self):
+        df = pd.DataFrame({'age': [5, 6, np.NaN],
+                           'born': [pd.NaT, pd.Timestamp('1939-05-27'),
+                                    pd.Timestamp('1940-04-25')],
+                           'name': ['Alfred', 'Batman', ''],
+                           'toy': [None, 'Batmobile', 'Joker']})
+        self.ds = Dataset.from_dataframe(df)
+        self.ds.drop_na()
+        self.assertEqual(self.ds.features.shape[0], 1)
+        self.assertEqual(self.ds.features.shape[1], 4)
+        self.assertEqual(self.ds.features.iloc[0]['age'], 6.0)
+        self.assertEqual(self.ds.features.iloc[0]['born'],
+                         pd.Timestamp('1939-05-27'))
+        self.assertEqual(self.ds.features.iloc[0]['name'], 'Batman')
+
+        self.ds = Dataset.from_dataframe(df)
+        self.ds.set_target('toy')
+        self.ds.drop_na()
+        self.assertEqual(self.ds.features.shape[0], 1)
+        self.assertEqual(self.ds.features.shape[1], 3)
+        self.assertEqual(self.ds.features.iloc[0]['age'], 6.0)
+        self.assertEqual(self.ds.features.iloc[0]['born'],
+                         pd.Timestamp('1939-05-27'))
+        self.assertEqual(self.ds.features.iloc[0]['name'], 'Batman')
+        self.assertEqual(self.ds.target.shape[0], 1)
+        self.assertEqual(self.ds.target[0], 'Batmobile')

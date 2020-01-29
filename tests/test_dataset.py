@@ -77,3 +77,12 @@ class TestDataset(TestCase):
         self.assertListEqual(self.ds.samples_matching('0'), [3, 4, 7, 9])
         self.ds.unset_target()
         self.assertListEqual(self.ds.samples_matching('0', 'col3'), [3, 4, 7, 9])
+
+    def test_IG(self):
+        df = pd.DataFrame({
+            'sex': ['f', 'm', 'm', 'm', 'm', 'f', 'm', 'f', 'm', 'm'],
+            'pulse': ['100', '25', '100', '25', '50', '75', '100', '75', '75',
+                      '100']})
+        self.ds = Dataset.from_dataframe(df)
+        self.ds.set_target('sex')
+        self.assertAlmostEqual(self.ds.IG('pulse'), 0.2812908992306927)

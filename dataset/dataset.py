@@ -56,6 +56,8 @@ class Dataset(object):
                  'numerical_na', 'categorical_na', 'features', 'target']
     categorical_dtypes = ['bool', 'object', 'string', 'category']
 
+    __num_plots_per_row = 4
+
     def __init__(self, data_location=None, data_frame=None, *args, **kwargs):
         """
         Wrapper over the method read_csv from pandas, so you can user variadic
@@ -483,11 +485,11 @@ class Dataset(object):
         return included
 
     def features_importance(self,
-                            num_features=10,
-                            num_neighbors=10,
+                            num_features=None,
+                            num_neighbors=None,
                             abs_imp=False):
         """
-        Computes the features importance, using the ReliefF algorithm as
+        Computes NUMERICAL features importance, using the ReliefF algorithm as
         implemented in the `rebate` library.
 
         Args:
@@ -500,17 +502,20 @@ class Dataset(object):
             A sorted dictionary with the feature names and their importance.
 
         """
-        assert num_features <= len(
-            self.features), \
+        if num_features is None:
+            num_features = len(self.numerical_features)
+        if num_neighbors is None:
+            num_neighbors = 20
+        assert num_features <= len(self.numerical_features), \
             "Larger nr of features ({}) than available ({})".format(
-                num_features, len(self.features))
+                num_features, len(self.numerical_features))
         assert self.target is not None, \
             "Target feature must be specified before computing importance"
         assert num_neighbors <= self.data.shape[0], \
             "Larger nr of neighbours than samples ({})".format(
                 self.data.shape[0])
 
-        my_features = self.data.values  # the numpy array inside the dataframe
+        my_features = self.numerical.values  # the array inside the dataframe
         my_labels = self.target.values.ravel()  # the target as a 1D array.
 
         fs = ReliefF(n_features_to_select=num_features,
@@ -523,7 +528,8 @@ class Dataset(object):
             importances = fs.feature_importances_[:num_features]
         indices = np.argsort(importances)[:num_features]
 
-        return dict(zip(self.features.columns[indices], importances[indices]))
+        return dict([(self.numerical_features[i], importances[i]) for
+                     i in indices])
 
     #
     # Methods are related to data manipulation of the pandas dataframe.
@@ -1358,11 +1364,11 @@ class Dataset(object):
         plt.show()
         return
 
-    def plot_double_density(self, feature, category=None):
+    def plot_density(self, feature_names=None, category=None):
         """
-        Double density plot between a feature and a reference category.
+        Double density plot(s) between feature(s) and a reference category.
 
-        :param feature: The name of a feature in the dataset.
+        :param feature_names: The name of a feature(s) in the dataset.
         :param category: The name of the reference category we want to
             represent the double density plot against. If None, then the
             target variable is used.
@@ -1372,28 +1378,44 @@ class Dataset(object):
 
             # represent multiple density plots, one per unique value of the
             # target
-            my_data.plot_double_density(my_feature)
+            my_data.plot_density(my_feature)
 
             # represent double density plots, one per unique value of the
             # categorical feature 'my_feature2'
-            my_data.plot_double_density(my_feature1, my_feature2)
+            my_data.plot_density(my_feature1, my_feature2)
+
+            # Plot double density plots for all numerical features.
+            my_data.plot_density(my_data.numerical_features)
+
+            or
+
+            my_data.plot_density()
+
         """
-        # Get the list of categories
-        categories, category_series = self.__assert_category_values(category)
+        if feature_names is None:
+            feature_names = self.numerical_features
+        if isinstance(feature_names, list):
+            num_plots = int(len(feature_names))
+            rows = int(num_plots / self.__num_plots_per_row)
+            if num_plots % self.__num_plots_per_row != 0:
+                rows += 1
+            cols = self.__num_plots_per_row if num_plots >= self.__num_plots_per_row else num_plots
+            plots_left = num_plots
+            for j in range(rows):
+                plt.figure(figsize=(14, 3))
+                for i in range(min(self.__num_plots_per_row, plots_left)):
+                    plt.subplot(1, cols, i + 1)
+                    self.__plot_double_density(feature_names[i + (j * self.__num_plots_per_row)])
+                    plots_left -= 1
+                plt.show()
+        else:
+            self.__plot_double_density(feature_names, category)
 
-        assert feature in self.numerical, '"Feature" must be numerical.'
-        # plot a density for each value of the category
-        for value in categories:
-            sns.distplot(self.features[feature][category_series == value],
-                         hist=False, kde=True,
-                         kde_kws={'shade': True},
-                         label=str(value))
-
-    def plot_double_hist(self, feature, category=None):
+    def plot_histogram(self, feature_names=None, category=None):
         """
         Double histogram plot between a feature and a reference category.
 
-        :param feature: The name of a feature in the dataset.
+        :param feature_names: The name(s) of the feature(s) in the dataset.
         :param category: The name of the reference category we want to
             represent the double density plot against. If None, then the
             target variable is used.
@@ -1408,93 +1430,64 @@ class Dataset(object):
             # represent double density plots, one per unique value of the
             # categorical feature 'my_feature2'
             my_data.double_hist(my_feature1, my_feature2)
+
+            or
+
+            my_data.plot_density()
         """
-        # Get the list of categories
-        categories, category_series = self.__assert_category_values(category)
+        if feature_names is None:
+            feature_names = self.numerical_features
+        if isinstance(feature_names, list):
+            num_plots = int(len(feature_names))
+            rows = int(num_plots / self.__num_plots_per_row)
+            if num_plots % self.__num_plots_per_row != 0:
+                rows += 1
+            cols = self.__num_plots_per_row if num_plots >= self.__num_plots_per_row else num_plots
+            plots_left = num_plots
+            for j in range(rows):
+                plt.figure(figsize=(14, 3))
+                for i in range(min(self.__num_plots_per_row, plots_left)):
+                    plt.subplot(1, cols, i + 1)
+                    self.__plot_double_hist(feature_names[i + (j * self.__num_plots_per_row)])
+                    plots_left -= 1
+                plt.show()
+        else:
+            self.__plot_double_hist(feature_names, category)
 
-        assert feature in self.numerical, '"Feature" must be numerical.'
-        # plot a density for each value of the category
-        for value in categories:
-            sns.distplot(self.features[feature][category_series == value],
-                         hist=True, kde=False,
-                         kde_kws={'shade': True},
-                         label=str(value))
-        plt.legend(loc='best')
-
-    def plot_against_target(self, columns_list, bins=50):
+    def plot_importance(self,
+                        num_features=None,
+                        num_neighbors=None,
+                        abs_imp=False):
         """
-        Plots a histogram of all (or a specific) feature along with target
-        variable (stacked bar chart)
-
-        :param columns_list: Feature, or list of features to plot
-        :param bins: Number of bins for the histogram
-        :return: None
-
-        Example:
-
-            my_data.plot_against_target('column_name')
-            my_data.plot_against_target(['column1', 'column2', 'column3'])
-
-        """
-        assert self.names('target') is not None, \
-            "Please set the target variable first"
-        target_name = self.names('target')
-
-        if isinstance(columns_list, list) is not True:
-            columns_list = [columns_list]
-
-        plt.rcParams["figure.figsize"] = (15, 15)
-
-        for i, column in enumerate(columns_list):
-            if column in self.names('features') and \
-                    column in self.names('numerical'):
-                # Prepare series
-                data = self.select([column, target_name]).copy()
-                data = pd.concat([self.select([column]), self.target], axis=1)
-                x = data.loc[data[target_name] == 0][column]
-                y = data.loc[data[target_name] == 1][column]
-
-                # calculate number of bins
-                unique = len(np.unique(data))
-                number_of_bins = unique if unique <= bins else bins
-
-                # Plot arrangement
-                plt.subplot(len(columns_list), 1, i + 1)
-
-                # Plot
-                plt.hist([x, y], bins=number_of_bins, stacked=True)
-
-                # Add labels
-                plt.title('Histogram of ' + column)
-                plt.legend([target_name + ': 0', target_name + ': 1'])
-                plt.xlabel(column)
-                plt.ylabel('count')
-
-    def plot_importance(self, num_features=10, num_neighbors=10, abs_imp=False):
-        """
-        Plots the features importance, using the ReliefF algorithm as
+        Plots the NUMERICAL features importance, using the ReliefF algorithm as
         implemented in the `rebate` library.
 
         Args:
-            num_features:   The nr of features we want to display
+            num_features:   The nr of features we want to display. Default is
+                            all features.
             num_neighbors:  The nr of neighbors to consider when computing the
-                            features importance
+                            features importance. Default is 20.
             abs_imp:        if True, importance is displayed taking the ABS()
+                            Default value is False.
 
         Returns:
             None
 
         """
+        if num_features is None:
+            num_features = len(self.numerical_features)
+        if num_neighbors is None:
+            num_neighbors = 20
         vbles_importance = self.features_importance(num_features,
                                                     num_neighbors,
                                                     abs_imp)
         top_features = list(vbles_importance.keys())
         importances = list(vbles_importance.values())
 
-        plt.figure(figsize=(8, 10))
-        plt.title("Features importance (ReliefF)")
+        plt.figure(figsize=(8, 8))
+        plt.title("Numerical Features importance (ReliefF)")
         plt.barh(range(num_features), importances,
-                 color="r",
+                 color="#c1d9eb",
                  xerr=np.std(importances),
                  align="center")
         plt.yticks(range(num_features), top_features)
@@ -1550,3 +1543,34 @@ class Dataset(object):
         description['3rdQ'] = np.percentile(feature, 75)
         description['Max.'] = np.max(feature)
         return description
+
+    def __plot_double_density(self, feature, category=None):
+        """
+        Plots a double density plot with the feature specified
+        """
+        # Get the list of categories
+        categories, category_series = self.__assert_category_values(category)
+
+        assert feature in self.numerical, '"Feature" must be numerical.'
+        # plot a density for each value of the category
+        for value in categories:
+            sns.distplot(self.features[feature][category_series == value],
+                         hist=False, kde=True,
+                         kde_kws={'shade': True},
+                         label=str(value))
+
+    def __plot_double_hist(self, feature, category=None):
+        """
+        Plots a double histogram for feature name passed.
+        """
+        # Get the list of categories
+        categories, category_series = self.__assert_category_values(category)
+
+        assert feature in self.numerical, '"Feature" must be numerical.'
+        # plot a density for each value of the category
+        for value in categories:
+            sns.distplot(self.features[feature][category_series == value],
+                         hist=True, kde=False,
+                         kde_kws={'shade': True},
+                         label=str(value))
+        plt.legend(loc='best')

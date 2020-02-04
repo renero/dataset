@@ -14,7 +14,7 @@ from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, PowerTransformer
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, PowerTransformer
 from sklearn_pandas import DataFrameMapper
 from skrebate import ReliefF
 
@@ -211,7 +211,7 @@ class Dataset(object):
         """
         assert features_of_type in self.meta_tags, \
             "No features of the type specified"
-        assert method == 'StandardScaler' or method == 'MinMaxScaler',\
+        assert method == 'StandardScaler' or method == 'MinMaxScaler', \
             "Method can only be \'standard\' or \'minmax\'"
 
         subset = self.select(features_of_type)
@@ -578,10 +578,14 @@ class Dataset(object):
         :return: Reference to the columns specified.
         """
         if isinstance(what, list):
-            return self.features.loc[:, what]
+            # return self.features.loc[:, what]
+            return self.features[what]
         else:
             assert what in self.meta_tags
-            return self.features.loc[:, self.meta[what]]
+            if what == 'all':
+                return self.all[self.meta[what]]
+            else:
+                return self.features[self.meta[what]]
 
     def samples_matching(self, value=None, feature=None):
         """
@@ -742,39 +746,36 @@ class Dataset(object):
         self.__update()
         return self
 
-    def add_column(self, series):
+    def add_columns(self, new_features):
         """
         Add a Series as a new column to the dataset.
 
-        :param series: A pandas Series object with the data to be added to
-            the Dataset. It must contain a valid name not present in the
-            Dataset already.
+        :param new_features: A pandas Series object or a DataFrame with the
+                             data to be added to the Dataset. It must contain
+                             a valid name not present in the Dataset already.
 
-        Example::
+        Examples::
 
-            my_data.add_column(series)
-
-            my_data.add_column(name=pandas.Series().values)
+            my_data.add_column(my_series)
+            my_data.add_column(pandas.Series().values)
+            my_data.add_column(my_dataframe)
         """
-        if series.name not in self.names('features'):
-            self.features[series.name] = series.values
-            self.__update()
-        return self
+        if isinstance(new_features, pd.Series):
+            if new_features.name is not None:
+                if new_features.name in self.names('features'):
+                    raise ValueError(
+                        'There is already a feature called {}'.format(
+                            new_features.name))
+                self.features[new_features.name] = new_features.values
+            else:
+                self.features[
+                    'xf{}'.format(self.num_features + 1)] = new_features.values
+        elif isinstance(new_features, pd.DataFrame):
+            self.features = pd.concat([self.features, new_features], axis=1)
+        else:
+            raise ValueError(
+                'Only pandas Series or DataFrames can be passed to this method')
 
-    def add_columns(self, dataframe):
-        """
-        Add a DataFrame as a new column to the dataset.
-
-        :param dataframe: A pandas `DataFrame` object to be addedd as new
-            columns to this dataset.
-
-        Example::
-
-            my_data.add_columns(df)
-        """
-        assert isinstance(dataframe, pd.DataFrame) is True, \
-            "Argument dataframe must be a pandas DataFrame"
-        self.features = pd.concat([self.features, dataframe], axis=1)
         self.__update()
         return self
 
@@ -1359,6 +1360,7 @@ class Dataset(object):
     #
     # Properties
     #
+
     @property
     def numerical_features(self):
         return self.names('numerical')
@@ -1366,6 +1368,14 @@ class Dataset(object):
     @property
     def categorical_features(self):
         return self.names('categorical')
+
+    @property
+    def num_features(self):
+        return self.features.shape[1]
+
+    @property
+    def num_samples(self):
+        return self.features.shape[0]
 
     #
     # Plot functions
@@ -1424,7 +1434,8 @@ class Dataset(object):
                 plt.figure(figsize=(14, 3))
                 for i in range(min(self.__num_plots_per_row, plots_left)):
                     plt.subplot(1, cols, i + 1)
-                    self.__plot_double_density(feature_names[i + (j * self.__num_plots_per_row)])
+                    self.__plot_double_density(
+                        feature_names[i + (j * self.__num_plots_per_row)])
                     plots_left -= 1
                 plt.show()
         else:
@@ -1467,7 +1478,8 @@ class Dataset(object):
                 plt.figure(figsize=(14, 3))
                 for i in range(min(self.__num_plots_per_row, plots_left)):
                     plt.subplot(1, cols, i + 1)
-                    self.__plot_double_hist(feature_names[i + (j * self.__num_plots_per_row)])
+                    self.__plot_double_hist(
+                        feature_names[i + (j * self.__num_plots_per_row)])
                     plots_left -= 1
                 plt.show()
         else:

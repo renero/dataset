@@ -294,9 +294,31 @@ class Dataset(object):
         :return: the list of features that are highly correlated, and
             should be safe to remove.
         """
-        corr_categoricals, _ = self.categorical_correlated(threshold)
-        corr_numericals, _ = self.numerical_correlated(threshold)
+        corr_categoricals = self.categorical_correlated(threshold)
+        corr_numericals = self.numerical_correlated(threshold)
+
         return corr_categoricals + corr_numericals
+
+    @staticmethod
+    def __top_correlations(df, correlations, threshold):
+        def redundant_pairs(dataf):
+            """
+            Get diagonal and lower triangular pairs of correlation matrix
+            """
+            pairs_to_drop = set()
+            cols = dataf.columns
+            for i in range(0, dataf.shape[1]):
+                for j in range(0, i + 1):
+                    pairs_to_drop.add((cols[i], cols[j]))
+            return pairs_to_drop
+
+        labels_to_drop = redundant_pairs(df)
+        correlations = correlations.drop(labels=labels_to_drop).sort_values(
+            ascending=False)
+        tuples = [(correlations.index[i][0], correlations.index[i][1],
+                   correlations[i]) for i in range(correlations.shape[0]) \
+                  if correlations[i] > threshold]
+        return tuples
 
     def numerical_correlated(self, threshold=0.9):
         """
@@ -307,14 +329,9 @@ class Dataset(object):
         :return: The list of columns that are highly correlated and could be
             drop out from dataset.
         """
-        corr_matrix = np.absolute(
-            self.select('numerical').corr(method='spearman')).abs()
-        # Select upper triangle of correlation matrix
-        upper = corr_matrix.where(
-            np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
-        # Find index of feature columns with correlation greater than threshold
-        return [column for column in upper.columns
-                if any(abs(upper[column]) > threshold)], corr_matrix
+        correlations = self.numerical.corr(method='spearman').abs().unstack()
+        return Dataset.__top_correlations(self.numerical, correlations,
+                                          threshold)
 
     def categorical_correlated(self, threshold=0.9):
         """
@@ -344,12 +361,9 @@ class Dataset(object):
                     corr[columns[i]][columns[j]] = cell
                     corr[columns[j]][columns[i]] = cell
         corr.fillna(value=np.nan, inplace=True)
-        # Select upper triangle of correlation matrix
-        upper = corr.where(
-            np.triu(np.ones(corr.shape), k=1).astype(np.bool))
-        # Find index of feature columns with correlation greater than threshold
-        return [column for column in upper.columns
-                if any(abs(upper[column]) > threshold)], corr
+        correlations = corr.abs().unstack()
+        return Dataset.__top_correlations(self.categorical, correlations,
+                                          threshold)
 
     def under_represented_features(self, threshold=0.98):
         """

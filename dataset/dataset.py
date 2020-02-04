@@ -14,7 +14,7 @@ from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, PowerTransformer
 from sklearn_pandas import DataFrameMapper
 from skrebate import ReliefF
 
@@ -191,17 +191,32 @@ class Dataset(object):
         outliers = np.where(y_pred == -1)
         return outliers[0]
 
-    def scale(self, features_of_type='numerical', return_series=False):
+    def scale(self,
+              features_of_type='numerical',
+              method='StandardScaler',
+              return_series=False):
         """
         Scales numerical features in the dataset, unless the parameter 'what'
-        specifies any other subset selection primitive.
+        specifies any other subset selection primitive. The method to be used
+        is the sckikit learn StandardScaler.
+
+        Examples:
+
+            # scale all my numerical features
+            my_data.scale()
 
         :param features_of_type: Subset selection primitive
+        :param method: 'StandardScaler', 'MinMaxScaler'
         :return: the subset scaled.
         """
-        assert features_of_type in self.meta_tags
+        assert features_of_type in self.meta_tags, \
+            "No features of the type specified"
+        assert method == 'StandardScaler' or method == 'MinMaxScaler',\
+            "Method can only be \'standard\' or \'minmax\'"
+
         subset = self.select(features_of_type)
-        mapper = DataFrameMapper([(subset.columns, StandardScaler())])
+        scaler = globals()[method]
+        mapper = DataFrameMapper([(subset.columns, scaler())])
         scaled_features = mapper.fit_transform(subset.copy())
         self.features[self.names(features_of_type)] = pd.DataFrame(
             scaled_features,
@@ -213,31 +228,31 @@ class Dataset(object):
         else:
             return self
 
-    def fix_skewness(self, features_of_type='numerical', return_series=False):
+    def fix_skewness(self, feature_names=None, return_series=False):
         """
-        Ensures that the numerical features in the dataset, unless the
-        parameter 'what' specifies any other subset selection primitive,
-        fit into a normal distribution by applying the Yeo-Johnson transform
+        Ensures that the numerical features in the dataset,
+        fit into a normal distribution by applying the Yeo-Johnson transform.
+        If not already scaled, they're scaled as part of the process.
 
-        :param features_of_type: Subset selection primitive
-        :param return_series: Return the normalized series
-        :return: the subset fitted to normal distribution.
+        :param feature_names:    Features to be fixed. If not specified, all
+                                 numerical features are examined.
+        :param return_series:    Return the normalized series
+
+        :return:                 The subset fitted to normal distribution,
+                                 or None
         """
-        assert features_of_type in self.meta_tags
-        subset = self.select(features_of_type)
-        mapper = DataFrameMapper([(subset.columns, PowerTransformer(
-            method='yeo-johnson',
-            standardize=False))])
-        normed_features = mapper.fit_transform(subset.copy())
-        self.features[self.names(features_of_type)] = pd.DataFrame(
-            normed_features,
-            index=subset.index,
-            columns=subset.columns)
+        if feature_names is None:
+            feature_names = self.numerical_features
+
+        yj = PowerTransformer(method='yeo-johnson')
+        normed_features = yj.fit_transform(self.features[feature_names])
+        self.features[feature_names] = normed_features
         self.__update()
-        if return_series is True:
-            return self.features[self.names(features_of_type)]
 
-    def skewed_features(self, threshold=0.75, fix=False, return_series=False):
+        if return_series is True:
+            return normed_features
+
+    def skewed_features(self, threshold=0.75, fix=False, return_series=True):
         """
         Returns the list of numerical features that present skewness
 
@@ -246,7 +261,7 @@ class Dataset(object):
         :param fix: (Default: False) Boolean indicating whether or not
             fixing the skewed features. If True, those with values above the
             threshold will be fixed using BoxCox.
-        :param return_series: (Default: False) Boolean indicating whether
+        :param return_series: (Default: True) Boolean indicating whether
             returning the features (pandas DataFrame) that present skewness.
         :return: A pandas Series with the features and their skewness
         """

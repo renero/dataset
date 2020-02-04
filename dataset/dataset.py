@@ -242,7 +242,11 @@ class Dataset(object):
                                  or None
         """
         if feature_names is None:
+            if len(self.numerical_features) == 0:
+                raise ValueError('No numerical features to fix.')
             feature_names = self.numerical_features
+        elif not isinstance(feature_names, list):
+            feature_names = [feature_names]
 
         yj = PowerTransformer(method='yeo-johnson')
         normed_features = yj.fit_transform(self.features[feature_names])

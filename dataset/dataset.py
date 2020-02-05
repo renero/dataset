@@ -14,6 +14,7 @@ from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
+# noinspection PyUnresolvedReferences
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, PowerTransformer
 from sklearn_pandas import DataFrameMapper
 from skrebate import ReliefF
@@ -135,29 +136,30 @@ class Dataset(object):
         """
         meta = dict()
 
-        # Build the subsets per data ype (list of names)
-        descr = pd.DataFrame({'dtype': self.features.dtypes,
-                              'NAs': self.features.isna().sum()})
-        categorical_features = descr.loc[descr['dtype'] == 'object']. \
-            index.values.tolist()
-        numerical_features = descr.loc[descr['dtype'] != 'object']. \
-            index.values.tolist()
-        numerical_features_na = descr.loc[(descr['dtype'] != 'object') &
-                                          (descr['NAs'] > 0)]. \
-            index.values.tolist()
-        categorical_features_na = descr.loc[(descr['dtype'] == 'object') &
-                                            (descr['NAs'] > 0)]. \
-            index.values.tolist()
-        complete_features = descr.loc[descr['NAs'] == 0].index.values.tolist()
-
         # Update META-information
-        meta['description'] = descr
         if self.target is not None:
             meta['all'] = list(self.features) + [self.target.name]
             self.all = pd.concat([self.features, self.target], axis=1)
         else:
             meta['all'] = list(self.features)
             self.all = self.features
+
+        # Build the subsets per data ype (list of names)
+        descr = pd.DataFrame({'dtype': self.features.dtypes,
+                              'NAs': self.features.isna().sum()})
+        meta['description'] = descr
+
+        numerical = self.features.select_dtypes(include=['number'])
+        numerical_features = list(numerical)
+        categorical = self.features.select_dtypes(exclude=['number'])
+        categorical_features = list(categorical)
+        numerical_features_na = numerical.columns[
+            numerical.isna().any()].tolist()
+        categorical_features_na = categorical.columns[
+            categorical.isna().any()].tolist()
+        complete_features = self.all.columns[
+            ~self.all.isna().any()].tolist()
+
         meta['features'] = list(self.features)
         meta['target'] = self.target.name if self.target is not None else None
         meta['categorical'] = categorical_features
@@ -269,7 +271,7 @@ class Dataset(object):
             returning the features (pandas DataFrame) that present skewness.
         :return: A pandas Series with the features and their skewness
         """
-        df = self.select('numerical')
+        df = self.numerical
         feature_skew = df.apply(
             lambda x: skew(x)).sort_values(ascending=False)
 
@@ -382,6 +384,27 @@ class Dataset(object):
                 under_rep.append(column)
         return under_rep
 
+    def information_gain(self):
+        """
+        Computes the information gain between each categorical and target
+        variable.
+
+        Examples:
+            my_data.information_gain()
+            Name   : 0.18
+            Speed  : 0.00
+            Type 1 : 0.04
+            Type 2 : 0.03
+
+        Returns:
+            A dictionary with the IG value for each cateogrical feature name
+        """
+        self.drop_na()
+        ig = {}
+        for f in self.categorical_features:
+            ig[f] = self.IG(f)
+        return ig
+
     def IG(self, vble_name):
         """
         Computes the Information Gain between a variable –whose name is passed,
@@ -479,18 +502,19 @@ class Dataset(object):
         """
         if initial_list is None:
             initial_list = []
-        assert len(self.names('categorical')) == 0
-        assert self.target.dtype.name == 'float64'
+        if len(self.names('categorical')) != 0:
+            print('Considering only numerical features')
+        # assert self.target.dtype.name == 'float64'
 
         included = list(initial_list)
         while True:
             changed = False
             # forward step
-            excluded = list(set(self.features.columns) - set(included))
+            excluded = list(set(self.numerical.columns) - set(included))
             new_pval = pd.Series(index=excluded)
             for new_column in excluded:
                 model = sm.OLS(self.target, sm.add_constant(
-                    pd.DataFrame(self.features[included + [new_column]]))).fit()
+                    pd.DataFrame(self.numerical[included + [new_column]]))).fit()
                 new_pval[new_column] = model.pvalues[new_column]
             best_pval = new_pval.min()
             if best_pval < threshold_in:
@@ -502,7 +526,7 @@ class Dataset(object):
                                                                  best_pval))
             # backward step
             model = sm.OLS(self.target, sm.add_constant(
-                pd.DataFrame(self.features[included]))).fit()
+                pd.DataFrame(self.numerical[included]))).fit()
             # use all coefs except intercept
             pvalues = model.pvalues.iloc[1:]
             worst_pval = pvalues.max()  # null if p-values is empty
@@ -621,7 +645,7 @@ class Dataset(object):
         returns the indices of those samples whose `target` matches the
         value `red`.
 
-            my_data.samples_matching('column_3', 75)
+            my_data.samples_matching(75, 'column_3')
 
         returns the indices of those samples whose feature `column_3`
         values 75.
@@ -698,14 +722,15 @@ class Dataset(object):
                 column)
 
         bins_tuples = pd.IntervalIndex.from_tuples(bins)
-        x = pd.cut(self.data[column].to_list(), bins_tuples)
+        x = pd.cut(self.features[column].to_list(), bins_tuples)
         if category_names is None:
             x.categories = [i + 1 for i in range(len(bins))]
         else:
             assert len(category_names) == len(bins), \
                 "Num of categories passed does not matched number of bins."
             x.categories = category_names
-        self.data[column] = x
+        self.features[column] = x
+        self.to_categorical(column)
         self.__update()
         return self
 
@@ -927,13 +952,15 @@ class Dataset(object):
 
         :return: object
         """
-        self.features.replace([np.inf, -np.inf], np.nan).dropna(axis=1,
-                                                                inplace=True)
-        self.features.dropna(inplace=True)
+        # self.features.replace([np.inf, -np.inf], np.nan).dropna(axis=1,
+        #                                                         inplace=True)
+        self.features = self.features[
+            ~self.features.isin([np.nan, np.inf, -np.inf]).any(1)]
+        # self.features.dropna(inplace=True)
         self.features = self.features.reset_index(drop=True)
         if self.target is not None:
             self.target = self.target[
-                self.target.index.isin(self.data.index)]
+                self.target.index.isin(self.features.index)]
             self.target = self.target.reset_index(drop=True)
         self.__update()
         return self
@@ -1006,7 +1033,7 @@ class Dataset(object):
             to_convert = [to_convert]
 
         for column_name in to_convert:
-            if column_name in list(self.features):
+            if column_name in list(self.features.columns):
                 self.features[column_name] = pd.to_numeric(
                     self.features[column_name])
             else:
@@ -1315,6 +1342,10 @@ class Dataset(object):
     #
     # Properties
     #
+
+    @property
+    def feature_names(self):
+        return list(self.features.columns)
 
     @property
     def numerical_features(self):

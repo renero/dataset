@@ -514,7 +514,8 @@ class Dataset(object):
             new_pval = pd.Series(index=excluded)
             for new_column in excluded:
                 model = sm.OLS(self.target, sm.add_constant(
-                    pd.DataFrame(self.numerical[included + [new_column]]))).fit()
+                    pd.DataFrame(
+                        self.numerical[included + [new_column]]))).fit()
                 new_pval[new_column] = model.pvalues[new_column]
             best_pval = new_pval.min()
             if best_pval < threshold_in:
@@ -952,16 +953,12 @@ class Dataset(object):
 
         :return: object
         """
-        # self.features.replace([np.inf, -np.inf], np.nan).dropna(axis=1,
-        #                                                         inplace=True)
-        self.features = self.features[
-            ~self.features.isin([np.nan, np.inf, -np.inf]).any(1)]
-        # self.features.dropna(inplace=True)
-        self.features = self.features.reset_index(drop=True)
+        self.features.dropna(inplace=True)
         if self.target is not None:
             self.target = self.target[
                 self.target.index.isin(self.features.index)]
             self.target = self.target.reset_index(drop=True)
+        self.features = self.features.reset_index(drop=True)
         self.__update()
         return self
 

@@ -62,6 +62,7 @@ class TestDataset(TestCase):
 
     def test_bin(self):
         self.ds.discretize('col1', [(0, 2), (2, 4)])
+        self.ds.to_numerical('col1')
         self.assertListEqual(list(self.ds.features['col1'].values),
                              [1, 1, 2, 1, 1, 1, 1, 2, 1, 1])
 
@@ -89,8 +90,9 @@ class TestDataset(TestCase):
         self.assertAlmostEqual(self.ds.IG('pulse'), 0.2812908992306927)
 
     def test_drop_na(self):
-        df = pd.DataFrame({'age': [5, 6, np.NaN],
-                           'born': [pd.NaT, pd.Timestamp('1939-05-27'),
+        df = pd.DataFrame({'age': [5, 6, np.nan],
+                           'born': [None,
+                                    pd.Timestamp('1939-05-27'),
                                     pd.Timestamp('1940-04-25')],
                            'name': ['Alfred', 'Batman', ''],
                            'toy': [None, 'Batmobile', 'Joker']})

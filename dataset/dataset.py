@@ -709,11 +709,11 @@ class Dataset(object):
         self.__update()
         return self
 
-    def onehot_encode(self, to_convert=None):
+    def onehot_encode(self, feature_names=None):
         """
         Encodes the categorical features in the dataset, with OneHotEncode
 
-        :parameter to_convert: column or list of columns to be one-hot
+        :parameter feature_names: column or list of columns to be one-hot
             encoded.
             The only restriction is that the target variable cannot be
             specifiedin the list of columns and therefore, cannot be
@@ -737,13 +737,13 @@ class Dataset(object):
             my_data.onehot_encode()
 
         """
-        if to_convert is None:
+        if feature_names is None:
             to_encode = list(self.categorical)
         else:
-            if isinstance(to_convert, list) is not True:
-                to_encode = [to_convert]
+            if isinstance(feature_names, list) is not True:
+                to_encode = [feature_names]
             else:
-                to_encode = to_convert
+                to_encode = feature_names
 
         new_df = self.features[
             self.features.columns.difference(to_encode)].copy()
@@ -1191,71 +1191,12 @@ class Dataset(object):
             print('Target: {} ({})'.format(
                 self.meta['target'], self.target.dtype.name))
             if self.target.dtype.name == 'object':
-                self.describe_categorical(self.target)
+                self.__describe_categorical(self.target)
             else:
-                self.describe_numerical(self.target)
+                self.__describe_numerical(self.target)
         else:
             print('Target: Not set')
         return
-
-    @staticmethod
-    def describe_categorical(feature, inline=False):
-        """
-        Describe a categorical column by printing num classes and proportion
-        metrics.
-
-        Args:
-            feature: The categorical feature to be described.
-            inline: Print out without newlines.
-        """
-        num_categories = feature.nunique()
-        cat_names = feature.unique()
-        cat_counts = feature.value_counts().values
-        cat_proportion = [count / cat_counts.sum()
-                          for count in cat_counts]
-        if inline is False:
-            print('\'', feature.name, '\' (', feature.dtype.name, ')', sep='')
-            print('  {} categories'.format(num_categories))
-            for cat in range(len(cat_proportion)):
-                print('  · \'{}\': {} ({:.04})'.format(
-                    cat_names[cat], cat_counts[cat], cat_proportion[cat]))
-        else:
-            if num_categories <= 4:
-                max_categories = num_categories
-                trail = ''
-            else:
-                max_categories = 4
-                trail = '...'
-            header = '{:d} categs. '.format(num_categories)
-            body = '\'{}\'({:d}, {:.4f}) ' * max_categories
-            values = [(cat_names[cat], cat_counts[cat], cat_proportion[cat])
-                      for cat in range(max_categories)]
-            values_flattened = list(sum(values, ()))
-            body_formatted = body.format(*values_flattened)
-            return header + body_formatted + trail
-
-    @staticmethod
-    def describe_numerical(feature, inline=False):
-        """
-        Describe a numerical column by printing min, max, med, mean, 1Q, 3Q
-
-        :param feature: The numerical feature to be described.
-        :param inline: Default False. Controls whether the description is
-            generated in a single line (compact) or paragraph mode.
-        :return: nothing
-        """
-        description = Dataset.__numerical_description(feature)
-        if inline is False:
-            print('\'', feature.name, '\'', sep='')
-            for k, v in description.items():
-                print('  · {:<4s}: {:.04f}'.format(k, v))
-            return
-        else:
-            body = ('{}({:<.4}) ' * len(description))[:-1]
-            values = [(k, str(description[k])) for k in description]
-            values_flattened = list(sum(values, ()))
-            body_formatted = body.format(*values_flattened)
-            return body_formatted
 
     def describe(self, feature_name=None, inline=False):
         """
@@ -1290,9 +1231,9 @@ class Dataset(object):
         else:
             feature = self.features[feature_name]
         if feature.dtype.name in self.categorical_dtypes:
-            return self.describe_categorical(feature, inline)
+            return self.__describe_categorical(feature, inline)
         else:
-            return self.describe_numerical(feature, inline)
+            return self.__describe_numerical(feature, inline)
 
     def summary(self, what='all'):
         """
@@ -1588,6 +1529,65 @@ class Dataset(object):
         description['3rdQ'] = np.percentile(feature, 75)
         description['Max.'] = np.max(feature)
         return description
+
+    @staticmethod
+    def __describe_categorical(feature, inline=False):
+        """
+        Describe a categorical column by printing num classes and proportion
+        metrics.
+
+        Args:
+            feature: The categorical feature to be described.
+            inline: Print out without newlines.
+        """
+        num_categories = feature.nunique()
+        cat_names = feature.unique()
+        cat_counts = feature.value_counts().values
+        cat_proportion = [count / cat_counts.sum()
+                          for count in cat_counts]
+        if inline is False:
+            print('\'', feature.name, '\' (', feature.dtype.name, ')', sep='')
+            print('  {} categories'.format(num_categories))
+            for cat in range(len(cat_proportion)):
+                print('  · \'{}\': {} ({:.04})'.format(
+                    cat_names[cat], cat_counts[cat], cat_proportion[cat]))
+        else:
+            if num_categories <= 4:
+                max_categories = num_categories
+                trail = ''
+            else:
+                max_categories = 4
+                trail = '...'
+            header = '{:d} categs. '.format(num_categories)
+            body = '\'{}\'({:d}, {:.4f}) ' * max_categories
+            values = [(cat_names[cat], cat_counts[cat], cat_proportion[cat])
+                      for cat in range(max_categories)]
+            values_flattened = list(sum(values, ()))
+            body_formatted = body.format(*values_flattened)
+            return header + body_formatted + trail
+
+    @staticmethod
+    def __describe_numerical(feature, inline=False):
+        """
+        Describe a numerical column by printing min, max, med, mean, 1Q, 3Q
+
+        :param feature: The numerical feature to be described.
+        :param inline: Default False. Controls whether the description is
+            generated in a single line (compact) or paragraph mode.
+        :return: nothing
+        """
+        description = Dataset.__numerical_description(feature)
+        if inline is False:
+            print('\'', feature.name, '\'', sep='')
+            for k, v in description.items():
+                print('  · {:<4s}: {:.04f}'.format(k, v))
+            return
+        else:
+            body = ('{}({:<.4}) ' * len(description))[:-1]
+            values = [(k, str(description[k])) for k in description]
+            values_flattened = list(sum(values, ()))
+            body_formatted = body.format(*values_flattened)
+            return body_formatted
 
     def __plot_double_density(self, feature, category=None):
         """

@@ -1,0 +1,15 @@
+matplotlib
+numpy
+pandas
+scikit_learn
+scipy
+seaborn
+sklearn_pandas
+skrebate
+statsmodels
+nbsphinx
+ipykernel
+sphinxcontrib-bibtex
+sphinxcontrib-svg2pdfconverter
+ipywidgets
+sphinx-copybutton

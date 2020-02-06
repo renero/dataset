@@ -1,8 +1,7 @@
 dataset package
 ===============
 
-dataset module
---------------
-
 .. automodule:: dataset.dataset
-    :members:
+   :members:
+   :undoc-members:
+   :show-inheritance:

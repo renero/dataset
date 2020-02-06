@@ -23,14 +23,13 @@ tasks that are normally done over pandas dataframes, like:
 
 ## Install
 
-To install this package, simply git clone this repo, and:
+To install this package:
 
-    $ cd dataset
-    $ pip install -e .
+    $ pip install git+http://github.com/renero/dataset
 
 ## Examples
 
-Check the `example.py` to see how to start using it.
+Check the `example.ipynb` to see how to start using it.
 
 ## Documentation
 

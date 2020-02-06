@@ -33,4 +33,4 @@ Check the `example.ipynb` to see how to start using it.
 
 ## Documentation
 
-Please, check the latest documentation at [ReadTheDocs PyDataset Project page](https://readthedocs.org/projects/pydataset/).
+Please, check the latest documentation at [ReadTheDocs PyDataset Project page](https://pydataset.readthedocs.io/en/latest/).

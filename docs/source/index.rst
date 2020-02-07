@@ -17,11 +17,11 @@ J. Renero
 .. image:: https://img.shields.io/github/v/tag/renero/dataset
     :target: https://img.shields.io/github/v/tag/renero/dataset
 
-Dataset is for educational purposes, mainly. It tries to help to those
-approaching Python for Data Science for the first time, and have to deal with
-common dataset preparation tasks.
+Dataset is for educational purposes, mainly. It tries to help those
+approaching Data Science in Python for the first time, who must deal with
+common (and time consuming) data preparation tasks.
 
-This class attempts, through a very simple approach, to collect all the common
+This package tries, through a very simple approach, to collect all the common
 tasks that are normally done over pandas DataFrames, like:
 
 - load data
@@ -39,15 +39,15 @@ tasks that are normally done over pandas DataFrames, like:
 - find under represented categorical features
 - perform stepwise feature selection
 - compute information gain,
+- plot some useful charts
 
 Install
 -------
 
-To install this package, simply git clone this repo, and:
+To install this package, simply `pip` from this git repo:
 
 .. code-block:: bash
 
-  $ cd dataset
   $ pip install git+https://github.com/renero/dataset
 
 Data Tutorial / Guide
@@ -62,12 +62,12 @@ Data Tutorial / Guide
 The API Documentation
 ---------------------
 
-If you are looking for information on a specific function, class, or method,
+If you are looking for information on a specific function, or method,
 this part of the documentation is for you.
 
 .. toctree::
    :maxdepth: 3
-   :caption: Dataset API documentation
+   :caption: pyDataset API documentation
 
    dataset
 

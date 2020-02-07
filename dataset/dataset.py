@@ -202,7 +202,7 @@ class Dataset(object):
         specifies any other subset selection primitive. The method to be used
         is the sckikit learn StandardScaler.
 
-        Examples:
+        Examples::
 
             # scale all my numerical features
             my_data.scale()
@@ -389,7 +389,8 @@ class Dataset(object):
         Computes the information gain between each categorical and target
         variable.
 
-        Examples:
+        Examples::
+
             my_data.information_gain()
             Name   : 0.18
             Speed  : 0.00
@@ -639,7 +640,7 @@ class Dataset(object):
         Returns:
             A list with the index values of those samples matching.
 
-        Examples:
+        Examples::
 
             my_data.samples_matching('red')
 
@@ -879,7 +880,9 @@ class Dataset(object):
             operation is the sum of the values.
         :return: The Dataset object
 
-        Example: if we want to sum the values of column1 and column2 into a
+        Example:
+
+        If we want to sum the values of column1 and column2 into a
         new column called 'column3', we use::
 
             my_data.aggregate(['column1', 'column2'], 'column3', 'sum')
@@ -947,7 +950,7 @@ class Dataset(object):
         Drop samples with NAs from the features. If any value is infinite
         or -infinite, it is converted to NA, and removed also.
 
-        Example:
+        Examples::
 
             my_data.drop_na()
 
@@ -1055,11 +1058,11 @@ class Dataset(object):
 
             my_data.to_float(my_data.numerical_features)
 
-        which is equivalent to
+        which is equivalent to::
 
             my_data.to_float()
 
-        We can also specify a single or multiple features:
+        We can also specify a single or multiple features::
 
             my_data.to_float('feature_15')
             my_data.to_float(['feature_15', 'feature_21'])
@@ -1088,11 +1091,11 @@ class Dataset(object):
 
             my_data.to_int(my_data.numerical_features)
 
-        which is equivalent to
+        which is equivalent to::
 
             my_data.to_int()
 
-        We can also specify a single or multiple features:
+        We can also specify a single or multiple features::
 
             my_data.to_int('feature_15')
             my_data.to_int(['feature_15', 'feature_21'])

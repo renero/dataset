@@ -1058,15 +1058,12 @@ class Dataset(object):
 
             my_data.to_float(my_data.numerical_features)
 
-        which is equivalent to::
-
+            # which is equivalent to::
             my_data.to_float()
 
-        We can also specify a single or multiple features::
-
+            # We can also specify a single or multiple features::
             my_data.to_float('feature_15')
             my_data.to_float(['feature_15', 'feature_21'])
-
         """
         to_convert = self.__assert_list_of_numericals(to_convert)
         for column_name in to_convert:
@@ -1091,15 +1088,12 @@ class Dataset(object):
 
             my_data.to_int(my_data.numerical_features)
 
-        which is equivalent to::
-
+            # which is equivalent to::
             my_data.to_int()
 
-        We can also specify a single or multiple features::
-
+            # We can also specify a single or multiple features::
             my_data.to_int('feature_15')
             my_data.to_int(['feature_15', 'feature_21'])
-
         """
         to_convert = self.__assert_list_of_numericals(to_convert)
 
@@ -1141,8 +1135,8 @@ class Dataset(object):
         Example::
 
             my_data.merge_categories(column='color',
-                                         old_values=['grey', 'black'],
-                                         new_value='dark')
+                                     old_values=['grey', 'black'],
+                                     new_value='dark')
         """
         assert column in self.categorical, "Column must be categorical"
         assert isinstance(old_values, list), \
@@ -1402,8 +1396,7 @@ class Dataset(object):
             # Plot double density plots for all numerical features.
             my_data.plot_density(my_data.numerical_features)
 
-            or
-
+            # or
             my_data.plot_density()
 
         """
@@ -1447,8 +1440,7 @@ class Dataset(object):
             # categorical feature 'my_feature2'
             my_data.double_hist(my_feature1, my_feature2)
 
-            or
-
+            # or
             my_data.plot_density()
         """
         if feature_names is None:

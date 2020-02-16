@@ -1407,7 +1407,10 @@ class Dataset(object):
             rows = int(num_plots / self.__num_plots_per_row)
             if num_plots % self.__num_plots_per_row != 0:
                 rows += 1
-            cols = self.__num_plots_per_row if num_plots >= self.__num_plots_per_row else num_plots
+            if num_plots >= self.__num_plots_per_row:
+                cols = self.__num_plots_per_row
+            else:
+                cols = num_plots
             plots_left = num_plots
             for j in range(rows):
                 plt.figure(figsize=(14, 3))
@@ -1450,7 +1453,10 @@ class Dataset(object):
             rows = int(num_plots / self.__num_plots_per_row)
             if num_plots % self.__num_plots_per_row != 0:
                 rows += 1
-            cols = self.__num_plots_per_row if num_plots >= self.__num_plots_per_row else num_plots
+            if num_plots >= self.__num_plots_per_row:
+                cols = self.__num_plots_per_row
+            else:
+                cols = num_plots
             plots_left = num_plots
             for j in range(rows):
                 plt.figure(figsize=(14, 3))
@@ -1525,12 +1531,17 @@ class Dataset(object):
         return to_convert
 
     def __assert_category_values(self, category):
-        if category is None or self.target.name == category:
-            categories = self.target.unique()
-            category_series = self.target
+        assert category is not None or self.target is not None, \
+            'Category cannot be None. Set target or categorical variable first'
+        if self.target is not None:
+            if category is None or self.target.name == category:
+                categories = self.target.unique()
+                category_series = self.target
+            else:
+                raise ValueError('Target variable not set.')
         else:
             assert category in list(self.categorical), \
-                '"category" must be a categorical feature'
+                '"{}" must be a categorical feature'.format(category)
             categories = self.features[category].unique()
             category_series = self.features[category]
 

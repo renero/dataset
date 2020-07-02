@@ -10,12 +10,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
+from scipy.cluster import hierarchy
 from scipy.special import boxcox1p
 from scipy.stats import skew, boxcox_normmax
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
 # noinspection PyUnresolvedReferences
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, PowerTransformer
+from sklearn.preprocessing import scale
 from sklearn_pandas import DataFrameMapper
 from skrebate import ReliefF
 
@@ -1507,6 +1509,34 @@ class Dataset(object):
                  align="center")
         plt.yticks(range(num_features), top_features)
         plt.ylim([-1, num_features])
+        plt.show()
+
+    def plot_covariance(self):
+        """
+        Plots the covariance matrix as explained by scikit contributor
+        Andreas Mueller in Columbia lectures, ordering and grouping
+        (numerical) features with higher correlation.
+
+        Returns:
+            None
+        """
+
+        if len(self.numerical_features) == 0:
+            raise ValueError('No numerical features to plot.')
+
+        X = scale(self.select('numerical'))
+        cov = np.cov(X, rowvar=False)
+        order = np.array(
+            hierarchy.dendrogram(hierarchy.ward(cov), no_plot=True)['ivl'])
+        order = order.astype(np.int)
+        ordered_features = [self.numerical_features[i] for i in order]
+
+        plt.figure(figsize=(8, 8), dpi=100)
+        plt.title('Covariance Matrix for numerical features')
+        plt.imshow(cov[order, :][:, order])
+        plt.colorbar(shrink=0.8)
+        plt.xticks(range(X.shape[1]), ordered_features)
+        plt.yticks(range(X.shape[1]), ordered_features)
         plt.show()
 
     #

@@ -49,7 +49,7 @@ class Dataset(object):
 
     all = None
     meta = None
-    data = None
+    # data = None
     target = None
     features = None
     numerical = None
@@ -174,7 +174,7 @@ class Dataset(object):
         # Update macro access properties
         self.numerical = self.select('numerical')
         self.categorical = self.select('categorical')
-        self.data = self.features
+        # self.data = self.features
         return self
 
     def outliers(self, n_neighbors=20):
@@ -400,12 +400,12 @@ class Dataset(object):
             Type 2 : 0.03
 
         Returns:
-            A dictionary with the IG value for each cateogrical feature name
+            A dictionary with the IG value for each categorical feature name
         """
         self.drop_na()
         ig = {}
         for f in self.categorical_features:
-            ig[f] = self.IG(f)
+            ig[f] = self.__IG(f)
         return ig
 
     def IG(self, vble_name):
@@ -441,7 +441,7 @@ class Dataset(object):
 
         target_entropy = entropy(target_distribution)
 
-        vble = self.data[vble_name]
+        vble = self.features[vble_name]
         vble_num_unique_values = vble.nunique()
         vble_unique_values = vble.unique()
         vble_value_counts = vble.value_counts()
@@ -572,9 +572,9 @@ class Dataset(object):
                 num_features, len(self.numerical_features))
         assert self.target is not None, \
             "Target feature must be specified before computing importance"
-        assert num_neighbors <= self.data.shape[0], \
+        assert num_neighbors <= self.features.shape[0], \
             "Larger nr of neighbours than samples ({})".format(
-                self.data.shape[0])
+                self.features.shape[0])
 
         my_features = self.numerical.values  # the array inside the dataframe
         my_labels = self.target.values.ravel()  # the target as a 1D array.
@@ -1100,7 +1100,7 @@ class Dataset(object):
         to_convert = self.__assert_list_of_numericals(to_convert)
 
         # Bulk conversion..
-        self.data[to_convert] = self.data[to_convert].astype(int)
+        self.features[to_convert] = self.features[to_convert].astype(int)
         return self.__update()
 
     def to_categorical(self, to_convert):
@@ -1348,8 +1348,20 @@ class Dataset(object):
         return self.names('numerical')
 
     @property
+    def numerical_features_na(self):
+        return self.names('numerical_na')
+
+    @property
     def categorical_features(self):
         return self.names('categorical')
+
+    @property
+    def categorical_features_na(self):
+        return self.names('categorical_na')
+
+    @property
+    def incomplete_features(self):
+        return self.categorical_features_na + self.numerical_features_na
 
     @property
     def num_features(self):

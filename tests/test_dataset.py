@@ -19,16 +19,16 @@ class TestDataset(TestCase):
     def test_numbers_type_conversion(self):
         self.assertIs(self.ds.features.col1.dtype, np.dtype('float64'))
         self.ds.to_int('col1')
-        self.assertEqual(self.ds.data['col1'].dtype, 'int')
+        self.assertEqual(self.ds.features['col1'].dtype, 'int')
         self.ds.to_float('col1')
-        self.assertEqual(self.ds.data['col1'].dtype, 'float')
+        self.assertEqual(self.ds.features['col1'].dtype, 'float')
 
     def test_empty_to_float(self):
         # Check that conversion works with all numerical columns when no
         # column is specified
         self.ds.to_int('col1')
         self.ds.to_float()
-        self.assertEqual(self.ds.data['col1'].dtype, 'float')
+        self.assertEqual(self.ds.features['col1'].dtype, 'float')
 
     def tests_to_float(self):
         self.assertEqual(self.ds.numerical_features, ['col1'])
@@ -57,7 +57,7 @@ class TestDataset(TestCase):
         self.ds.set_target('col3')
         self.assertEqual(self.ds.meta['target'], 'col3')
         self.assertEqual(list(self.ds.numerical), ['col1'])
-        self.assertIs(self.ds.data, self.ds.features)
+        self.assertIs(self.ds.features, self.ds.features)
         self.assertEqual(list(self.ds.categorical), ['col2'])
 
     def test_bin(self):
@@ -116,3 +116,12 @@ class TestDataset(TestCase):
         self.assertEqual(self.ds.features.iloc[0]['name'], 'Batman')
         self.assertEqual(self.ds.target.shape[0], 1)
         self.assertEqual(self.ds.target[0], 'Batmobile')
+
+    def test_incomplete_features(self):
+        df1 = pd.DataFrame(
+            data={'col1': [1, 2, np.nan, 2],
+                  'col2': ['a', 'a', 'b', 'a'],
+                  'col3': ['1', '1', '1', np.nan]
+                  })
+        ds = Dataset.from_dataframe(df1)
+        self.assertEqual(set(ds.incomplete_features), set(['col1', 'col3']))

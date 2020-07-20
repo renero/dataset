@@ -33,7 +33,7 @@ warnings.simplefilter(action='ignore')
 #
 
 
-class Dataset(object):
+class Dataset:
     """
     This class allows a simpler representation of the dataset used
     to build a model in class. It allows to load a remote CSV by

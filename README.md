@@ -23,7 +23,7 @@ tasks that are normally done over pandas dataframes, like:
 
 ## Install
 
-To install this package:
+To install this package, first of all, be sure you have Python 3.7, and then do the following:
 
     $ pip install git+http://github.com/renero/dataset
 

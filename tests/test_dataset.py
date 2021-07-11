@@ -87,7 +87,7 @@ class TestDataset(TestCase):
                       '100']})
         self.ds = Dataset.from_dataframe(df)
         self.ds.set_target('sex')
-        self.assertAlmostEqual(self.ds.IG('pulse'), 0.2812908992306927)
+        self.assertAlmostEqual(self.ds._IG('pulse'), 0.2812908992306927)
 
     def test_drop_na(self):
         df = pd.DataFrame({'age': [5, 6, np.nan],

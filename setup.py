@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name='dataset',
-    version='0.16.6',
+    version='0.16.7',
     packages=['dataset'],
-    url='https://github.com/renero/class_notebooks/tree/master/src',
+    url='https://github.com/renero/dataset',
     license='MIT',
     author='J.Renero',
     author_email='',

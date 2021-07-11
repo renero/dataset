@@ -1,6 +1,7 @@
 """
 This is the package dataset.
 """
+import math
 import warnings
 from copy import copy
 from math import log2
@@ -262,7 +263,9 @@ class Dataset:
 
     def skewed_features(self, threshold=0.75, fix=False, return_series=True):
         """
-        Returns the list of numerical features that present skewness
+        Returns the list of numerical features that present skewness. This
+        method optionally can fix detected skewness whose ABS is greater
+        than the threshold passed, using BoxCox method.
 
         :param threshold: The limit over which considering that the
             ``skew()`` return value is considered a skewed feature.
@@ -278,7 +281,7 @@ class Dataset:
             lambda x: skew(x)).sort_values(ascending=False)
 
         if fix is True:
-            high_skew = feature_skew[feature_skew > threshold]
+            high_skew = feature_skew[np.abs(feature_skew) > threshold]
             skew_index = high_skew.index
             for feature in skew_index:
                 self.features[feature] = boxcox1p(
@@ -405,10 +408,10 @@ class Dataset:
         self.drop_na()
         ig = {}
         for f in self.categorical_features:
-            ig[f] = self.__IG(f)
+            ig[f] = self._IG(f)
         return ig
 
-    def IG(self, vble_name):
+    def _IG(self, vble_name):
         """
         Computes the Information Gain between a variable –whose name is passed,
         and the target variable.

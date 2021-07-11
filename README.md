@@ -26,6 +26,12 @@ tasks that are normally done over pandas dataframes, like:
 To install this package, first of all, be sure you have Python 3.7, and then do the following:
 
     $ pip install git+http://github.com/renero/dataset
+    
+Or, if you prefer, clone the repository using `git clone https:/github.com/renero/dataset.git`, and then move into the just created folder to install it:
+
+    $ git clone https:/github.com/renero/dataset.git
+    $ cd dataset
+    $ pip install -e .
 
 ## Examples
 

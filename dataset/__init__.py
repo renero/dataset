@@ -1,6 +1,7 @@
 """
-Dataset module for machine learning basic dataframe manipulation and feature engineering tasks
+Module for machine learning basic dataframe manipulation and
+feature engineering tasks. For educational purposes.
 """
 from dataset.dataset import Dataset
-from dataset import correlations
-from dataset import split
+
+__version__ = "0.17.0"

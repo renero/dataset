@@ -28,6 +28,14 @@ dataset.split module
    :undoc-members:
    :show-inheritance:
 
+dataset.utils module
+--------------------
+
+.. automodule:: dataset.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

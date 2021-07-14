@@ -40,7 +40,7 @@ def setup_package():
         author='J.Renero',
         install_requires=['matplotlib', 'numpy', 'pandas', 'scikit_learn',
                           'scipy', 'seaborn', 'sklearn_pandas', 'skrebate',
-                          'statsmodels', 'nbsphinx', 'functools', 'itertools',
+                          'statsmodels', 'nbsphinx', 'functools',
                           'collections'],
         author_email='jrenero@faculty.ie.edu'
     )
